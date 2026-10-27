@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from scicalculator import calculate_sci
+from SciCalc import calculate_sci
 from database import get_measurement, store_sci_score
 
 # hard coded carbon intensity

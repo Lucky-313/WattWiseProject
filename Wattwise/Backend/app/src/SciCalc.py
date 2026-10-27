@@ -1,4 +1,5 @@
 def calculate_sci(energy_kwh, carbon_intensity, embodied_emissions, functional_units):
+    # Return SCI using energy, grid intensity, emissions, and unit count.
     #checks values are allowed
     if energy_kwh < 0:
 
