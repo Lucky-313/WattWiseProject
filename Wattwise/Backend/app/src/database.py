@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, ForeignKey
+from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, ForeignKey, Float
 from sqlalchemy.orm import declarative_base
 from datetime import datetime
 
@@ -30,6 +30,42 @@ class Service(Base):
     provider = Column(String(100))
     region = Column(String(100))
     created_at = Column(DateTime, default=datetime.now)
+
+# MEASUREMENT TABLE
+class Measurement(Base):
+    __tablename__ = "measurements"
+
+    measurement_id = Column(Integer, primary_key=True)
+
+    service_id = Column(
+        Integer,
+        ForeignKey("services.service_id"),
+        nullable=False
+    )
+
+    timestamp = Column(DateTime, default=datetime.now)
+    energy_used = Column(Float)
+    carbon_intensity = Column(Float)
+    embodied_emissions = Column(Float)
+    functional_unit = Column(Float)
+    sci_score = Column(Float)
+
+# VARIABLE TABLE
+class Variable(Base):
+    __tablename__ = "variables"
+
+    variable_id = Column(Integer, primary_key=True)
+
+    project_id = Column(
+        Integer,
+        ForeignKey("projects.project_id"),
+        nullable=False
+    )
+
+    name = Column(String(100), nullable=False)
+    value = Column(Float)
+    unit = Column(String(50))
+    description = Column(Text)
 
 # Create the database tables
 if __name__ == "__main__":
