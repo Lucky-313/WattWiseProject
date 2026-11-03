@@ -1,6 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 import Layout from "./Layout.jsx";
-import Dashboard from "./pages/Dashboard.jsx";
+import Dashboard from "./pages/DashBoardselected.jsx";
 import Calculator from "./pages/Calculator.jsx";
 import Simulation from "./pages/Simulation.jsx";
 import Logbook from "./pages/Logbook.jsx";
