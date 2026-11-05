@@ -1,11 +1,11 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from SciCalc import calculate_sci
+from datetime import datetime
+from SciMetric import SCIMetric
+from ExternalGridAdapter import ExternalGridAdapter
 from database import get_measurement, store_sci_score
 
-# hard coded carbon intensity
-carbon_intensity= 129
-
+grid_adapter = ExternalGridAdapter()
 app = FastAPI()
 
 origins = [
@@ -51,10 +51,25 @@ async def calculate_sci(service_id):
         raise HTTPException(
             status_code=422, detail="Measurement contains invalid calculation data")
 
-    # calculates SCI score
+    # Create the SCI metric
+    metric = SCIMetric(
+        metric_id= int(measurement["measurement_id"]),
+        infra_id= int(measurement["infra_id"]),
+        timestamp= datetime.now(),
+        energy_consumed= energy_kwh,
+        grid_intensity= 0.0,
+        embodied_emissions= embodied_emissions,
+        functional_unit_count= functional_units,
+        calculated_sci= 0.0
+    )
+    
+    # Gets live grid intensity
+    intensity = grid_adapter.fetch_live_grid_intensity()
+    grid_adapter.apply_grid_intensity(metric, intensity)
 
+    # calculates SCI score
     try:
-        sci_score = calculate_sci(energy_kwh, carbon_intensity, embodied_emissions, functional_units)
+        sci_score = metric.calculate()
 
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
@@ -73,5 +88,7 @@ async def calculate_sci(service_id):
 
     # semds data to frontend
     return{
-        "sci_score": sci_score}
+        "sci_score": sci_score,
+        "carbon_intensity": intensity
+    }
         
