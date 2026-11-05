@@ -1,9 +1,15 @@
 from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, ForeignKey, Float, Boolean
 from sqlalchemy.orm import declarative_base, Session
 from datetime import datetime
+from pathlib import Path
 
-# Connect to our SQLite database
-engine = create_engine("sqlite:///wattwise.db")
+# Find the main WattWiseProject folder
+BASE_DIR = Path(__file__).resolve().parents[4]
+
+# Connect to the original SQLite database
+DATABASE_PATH = BASE_DIR / "wattwise.db"
+
+engine = create_engine(f"sqlite:///{DATABASE_PATH}")
 
 # Base class for creating database tables
 Base = declarative_base()
