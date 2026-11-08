@@ -162,6 +162,7 @@ def get_measurement(service_id):
         return {
             "measurement_id": measurement.measurement_id,
             "service_id": measurement.service_id,
+            "infra_id": measurement.service_id,
             "energy_used": measurement.energy_used,
             "carbon_intensity": measurement.carbon_intensity,
             "embodied_emissions": measurement.embodied_emissions,
