@@ -1,11 +1,11 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from SciCalc import calculate_sci
+from datetime import datetime
+from SciMetric import SCIMetric
+from ExternalGridAdapter import ExternalGridAdapter
 from database import get_measurement, store_sci_score
 
-# hard coded carbon intensity
-carbon_intensity= 129
-
+grid_adapter = ExternalGridAdapter()
 app = FastAPI()
 
 origins = [
@@ -26,67 +26,69 @@ def read_root():
 
 
 @app.get("/services/sci/{service_id}")
-async def calculate_service_sci(service_id: int):
+async def calculate_sci(service_id):
 
-    # Get measurement data from database
+    # tries to get measurement data from database
     try:
         measurement = get_measurement(service_id)
 
-    except Exception as exc:
-        print("Database error:", repr(exc))
+    except Exception:
         raise HTTPException(
-            status_code=500,
-            detail="Could not read measurement data from the database"
-        )
+            status_code=500, detail="Could not read measurement data from the database")
 
     if measurement is None:
         raise HTTPException(
-            status_code=404,
-            detail="No measurement found"
-        )
+            status_code=404, detail="No measurement found")
 
-    # Get values needed for SCI calculation
+    # tries to take needed data for sci cal from measurement
+
     try:
         energy_kwh = float(measurement["energy_used"])
-        carbon_intensity = float(measurement["carbon_intensity"])
-        embodied_emissions = float(measurement["embodied_emissions"])
+        embodied_emissions = float(measurement["embodied_emissions"]) 
         functional_units = float(measurement["functional_unit"])
 
-    except (ValueError, TypeError, KeyError):
+    except ValueError:
         raise HTTPException(
-            status_code=422,
-            detail="Measurement contains invalid calculation data"
-        )
+            status_code=422, detail="Measurement contains invalid calculation data")
 
-    # Calculate SCI score
+    # Create the SCI metric
+    metric = SCIMetric(
+        metric_id= int(measurement["measurement_id"]),
+        infra_id= int(measurement["infra_id"]),
+        timestamp= datetime.now(),
+        energy_consumed= energy_kwh,
+        grid_intensity= 0.0,
+        embodied_emissions= embodied_emissions,
+        functional_unit_count= functional_units,
+        calculated_sci= 0.0
+    )
+    
+    # Gets live grid intensity
+    intensity = grid_adapter.fetch_live_grid_intensity()
+    grid_adapter.apply_grid_intensity(metric, intensity)
+
+    # calculates SCI score
     try:
-        sci_score = calculate_sci(
-            energy_kwh,
-            carbon_intensity,
-            embodied_emissions,
-            functional_units
-        )
+        sci_score = metric.calculate()
 
     except ValueError as exc:
-        raise HTTPException(
-            status_code=422,
-            detail=str(exc)
-        )
+        raise HTTPException(status_code=422, detail=str(exc))
 
-    # Save SCI score to database
+    # send SCI score to database
+
     try:
+
         store_sci_score(
-            measurement["measurement_id"],
-            sci_score
+            measurement["measurement_id"], sci_score
         )
 
-    except Exception as exc:
-        print("Save error:", repr(exc))
+    except Exception:
         raise HTTPException(
-            status_code=500,
-            detail="SCI score could not be saved"
-        )
+            status_code=500, detail="SCI score could not be saved")
 
-    return {
-        "sci_score": sci_score
+    # semds data to frontend
+    return{
+        "sci_score": sci_score,
+        "carbon_intensity": intensity
     }
+        
