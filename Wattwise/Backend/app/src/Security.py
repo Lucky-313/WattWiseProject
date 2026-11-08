@@ -25,7 +25,7 @@ def hash_password(password: str):
 
 # checks password against its hash
 def verify_password(plain_password: str, hashed_password: str):
-    return password_hash.verify(plain_password, hash_password)
+    return password_hash.verify(plain_password, hashed_password)
 
 # generate a JWT token
 def create_access_token(user_id: int):
