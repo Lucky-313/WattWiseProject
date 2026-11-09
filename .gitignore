@@ -228,3 +228,4 @@ __marimo__/
 # Python cache files
 __pycache__/
 *.pyc
+.vercel

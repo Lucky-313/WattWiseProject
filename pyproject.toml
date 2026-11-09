@@ -1,0 +1,5 @@
+[project]
+name = "app"
+version = "0.1.0"
+dependencies = [ "fastapi", "pydantic", "uvicorn", "sqlalchemy", "pyjwt", "pwdlib[argon2]", "email-validator" ]
+requires-python = "~=3.12.0"
