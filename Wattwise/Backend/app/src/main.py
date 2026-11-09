@@ -4,9 +4,13 @@ from datetime import datetime
 from SciMetric import SCIMetric
 from ExternalGridAdapter import ExternalGridAdapter
 from database import get_measurement, store_sci_score
+from Auth import router as auth_router
 
 grid_adapter = ExternalGridAdapter()
 app = FastAPI()
+
+# register auth routes
+app.include_router(auth_router)
 
 origins = [
     "http://localhost:5173", # Vite's default local address
