@@ -146,6 +146,19 @@ class Report(Base):
     generated_at = Column(DateTime, default=datetime.now)
     content = Column(Text)
 
+# USER TABLE
+class User(Base):
+    __tablename__ = "USER"
+
+    user_id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(50), nullable=False)
+    email = Column(String(255), unique=True, nullable=False)
+    password_hash = Column(String(255), nullable=False)
+    role = Column(String(50), default="user")
+    created_at = Column(DateTime, default=datetime.now)
+
+
+
     # GET MEASUREMENT DATA
 def get_measurement(service_id):
     with Session(engine) as session:
@@ -184,6 +197,39 @@ def store_sci_score(measurement_id, sci_score):
         session.commit()
 
         return True
+
+#Create a new user account
+def create_user(name, email, password_hash):
+
+    with Session(engine) as session:
+
+        new_user= User(
+            name=name,
+            email=email,
+            password_hash=password_hash
+        )
+
+        session.add(new_user)
+        session.commit()
+        session.refresh(new_user)
+
+        return new_user
+
+
+# find user using their email
+def get_user_by_email(email):
+
+    with Session(engine) as session:
+
+        return session.query(User).filter(User.email == email).first()
+
+# find user using their ID
+def get_user_by_id(user_id):
+
+    with Session(engine) as session:
+
+        return session.query(User).filter(User.user_id == user_id).first()
+
 
 # Create the database tables
 if __name__ == "__main__":
