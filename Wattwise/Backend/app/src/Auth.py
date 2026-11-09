@@ -28,9 +28,9 @@ def register(user: RegisterRequest):
 
     return {
         "message": "Account created successfully",
-        "user_id": new_user["user_id"],
-        "name": new_user["name"],
-        "email": new_user["email"]
+        "user_id": new_user.user_id,
+        "name": new_user.name,
+        "email": new_user.email
 
     }
 
@@ -45,11 +45,11 @@ def login(user: LoginRequest):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
     #verify password
-    if not verify_password(user.password, existing_user["password_hash"]):
+    if not verify_password(user.password, existing_user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
     #generate JWT
-    token = create_access_token(existing_user["user_id"])
+    token = create_access_token(existing_user.user_id)
 
     return{"access_token": token, "token_type": "bearer"}
 
@@ -68,7 +68,7 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(bearer_
         raise HTTPException(status_code=401, detail="User not found ")
 
     return{
-        "user_id": existing_user["user_id"],
-        "name": existing_user["name"],
-        "email": existing_user["email"]
+        "user_id": existing_user.user_id,
+        "name": existing_user.name,
+        "email": existing_user.email
     }
