@@ -29,9 +29,166 @@ function localDateKey(date) {
   ).padStart(2, "0")}`;
 }
 
+function pdfText(value) {
+  return String(value ?? "")
+    .replaceAll("CO₂", "CO2")
+    .replaceAll("₂", "2")
+    .replaceAll("₃", "3")
+    .replaceAll("·", "-")
+    .replaceAll("—", "-")
+    .replaceAll("–", "-")
+    .replaceAll("’", "'");
+}
+
+function createReportPdf(report, jsPDF) {
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 44;
+  const contentWidth = pageWidth - margin * 2;
+  const details = report.details;
+  const breaches = details.breaches || [details];
+  let y = 44;
+
+  doc.setFillColor(14, 165, 233);
+  doc.roundedRect(margin, y, 4, 48, 2, 2, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(14, 116, 144);
+  doc.text("WATTWISE  /  SUSTAINABILITY REPORT", margin + 16, y + 10);
+
+  doc.setFontSize(19);
+  doc.setTextColor(15, 23, 42);
+  const titleLines = doc.splitTextToSize(pdfText(report.report_name), contentWidth - 16).slice(0, 2);
+  doc.text(titleLines, margin + 16, y + 32);
+  y += 68;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(71, 85, 105);
+  const messageLines = doc.splitTextToSize(pdfText(details.message), contentWidth).slice(0, 2);
+  doc.text(messageLines, margin, y);
+  y += messageLines.length * 12 + 15;
+
+  doc.setDrawColor(226, 232, 240);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 20;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(15, 23, 42);
+  doc.text(`${breaches.length} metric limit${breaches.length === 1 ? "" : "s"} exceeded`, margin, y);
+  y += 15;
+
+  breaches.forEach((breach, index) => {
+    doc.setFillColor(248, 250, 252);
+    doc.roundedRect(margin, y, contentWidth, 45, 5, 5, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(15, 23, 42);
+    doc.text(pdfText(breach.metric_label), margin + 10, y + 13);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(51, 65, 85);
+    const observed = `${displayNumber(breach.observed_value)} ${pdfText(breach.unit)}`;
+    const limit = `${displayNumber(breach.max_threshold_limit)} ${pdfText(breach.unit)}`;
+    const difference = `${displayNumber(breach.difference)} ${pdfText(breach.unit)}`;
+    doc.text(`Observed: ${observed}   |   Limit: ${limit}   |   Over by: ${difference}`, margin + 10, y + 27);
+    const percent = breach.percentage_over == null
+      ? "Configured limit was zero"
+      : `${displayNumber(breach.percentage_over, 1)}% above limit`;
+    doc.setTextColor(100, 116, 139);
+    doc.text(percent, margin + 10, y + 39);
+    y += 51;
+    if (index < breaches.length - 1) y -= 6;
+  });
+
+  y += 8;
+  doc.setDrawColor(226, 232, 240);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 19;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(15, 23, 42);
+  doc.text("Daily measurements", margin, y);
+  y += 16;
+
+  const measurements = [
+    ["Day's SCI", `${displayNumber(details.sci_score, 6)} gCO2e / API call`],
+    ["Day's emissions", `${displayNumber(details.emissions_kgco2e)} kgCO2e`],
+    ["Energy consumption", `${displayNumber(details.energy_kwh)} kWh`],
+    ["Grid carbon intensity", `${displayNumber(details.carbon_intensity_gco2_kwh)} gCO2e / kWh`],
+    ["Embodied emissions", `${displayNumber(details.embodied_emissions_gco2e)} gCO2e`],
+    ["API calls", displayNumber(details.api_calls, 0)],
+  ];
+  const gap = 14;
+  const columnWidth = (contentWidth - gap) / 2;
+  measurements.forEach(([label, value], index) => {
+    const column = index % 2;
+    const row = Math.floor(index / 2);
+    const x = margin + column * (columnWidth + gap);
+    const rowY = y + row * 39;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    doc.text(label, x, rowY);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(15, 23, 42);
+    doc.text(pdfText(value), x, rowY + 13);
+  });
+
+  doc.setDrawColor(226, 232, 240);
+  doc.line(margin, pageHeight - 38, pageWidth - margin, pageHeight - 38);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(100, 116, 139);
+  doc.text("WattWise sustainability logbook", margin, pageHeight - 24);
+  doc.text("1 / 1", pageWidth - margin, pageHeight - 24, { align: "right" });
+
+  return doc;
+}
+
 function ReportModal({ report, onClose }) {
   const details = report.details;
   const breaches = details.breaches || [details];
+  const [pdfError, setPdfError] = useState("");
+  const [PDFConstructor, setPDFConstructor] = useState(null);
+
+  useEffect(() => {
+    import("jspdf")
+      .then(({ jsPDF }) => setPDFConstructor(() => jsPDF))
+      .catch((error) => {
+        console.error("Could not load the PDF generator.", error);
+        setPdfError("The PDF tool could not be loaded. Please try again.");
+      });
+  }, []);
+
+  function downloadPdf() {
+    setPdfError("");
+    if (!PDFConstructor) {
+      setPdfError("The PDF is still being prepared. Please try again in a moment.");
+      return;
+    }
+
+    try {
+      const doc = createReportPdf(report, PDFConstructor);
+      const filename = `${pdfText(report.report_name).replace(/[^a-z0-9-_ ]/gi, "").trim() || "wattwise-report"}.pdf`;
+      const pdfTab = window.open(doc.output("bloburl"), "_blank");
+      if (pdfTab) {
+        pdfTab.opener = null;
+      }
+      doc.save(filename);
+      if (!pdfTab) {
+        setPdfError("The PDF downloaded, but pop-ups are blocked. Allow pop-ups to open it in a new tab.");
+      }
+    } catch (error) {
+      console.error("Could not generate the report PDF.", error);
+      setPdfError("The PDF could not be generated. Please try again.");
+    }
+  }
+
   return (
     <div
       className="workspace-modal-backdrop"
@@ -110,9 +267,10 @@ function ReportModal({ report, onClose }) {
           <button
             type="button"
             className="workspace-primary-button workspace-report-download"
-            onClick={() => window.print()}
+            onClick={downloadPdf}
+            disabled={!PDFConstructor}
           >
-            Download PDF
+            {PDFConstructor ? "Download PDF" : "Preparing PDF…"}
           </button>
           <button
             type="button"
@@ -122,6 +280,7 @@ function ReportModal({ report, onClose }) {
             Close report
           </button>
         </div>
+        {pdfError && <p className="workspace-error" role="alert">{pdfError}</p>}
       </section>
     </div>
   );
