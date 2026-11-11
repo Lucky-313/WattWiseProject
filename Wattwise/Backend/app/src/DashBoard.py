@@ -19,8 +19,12 @@ class Dashboard:
         # Create a dashboard with its required logbook and grid adapter.
         # Infrastructure and SLA rules belong to this dashboard; the logbook
         # and adapter are required collaborators.
+
+# ensures logbook is associated with this dashboard and not another one.
         if logbook.dashboard_id != dashboard_id:
             raise ValueError("Logbook belongs to a different dashboard")
+
+        
         self.dashboard_id = dashboard_id
         self.name = name
         self.owner_id = owner_id
