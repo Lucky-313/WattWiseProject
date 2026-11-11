@@ -298,6 +298,13 @@ export default function FrontPage() {
               <span className="lock-icon" aria-hidden="true">⌑</span>
               Your session is limited to this browser tab.
             </div>
+            <button
+              type="button"
+              className="demo-home-button"
+              onClick={() => navigate("/home?demo=1")}
+            >
+              Demo home
+            </button>
           </div>
 
           <div className="hero-copy">
@@ -318,7 +325,7 @@ export default function FrontPage() {
               <button
                 type="button"
                 className="button-primary"
-                onClick={() => navigate("/home")}
+                onClick={() => navigate("/home?preview=1")}
               >
                 Explore Live Dashboards <span aria-hidden="true">↗</span>
               </button>
