@@ -14,13 +14,14 @@ export default function App() {
     <Routes>
       <Route path="/" element={<FrontPage />} />
       <Route path="/home" element={<Home />} />
+      <Route path="/logbook" element={<Logbook />} />
+      <Route path="/reports" element={<Navigate to="/logbook" replace />} />
       <Route path="/dashboard/:id" element={<Dashboard />} />
       <Route path="/dashboard/:id/simulation" element={<Simulation />} />
+      <Route path="/dashboard/:id/reports" element={<Reports />} />
       <Route element={<Layout />}>
         <Route path="/calculator" element={<Calculator />} />
         <Route path="/simulation" element={<Navigate to="/home" replace />} />
-        <Route path="/logbook" element={<Logbook />} />
-        <Route path="/reports" element={<Reports />} />
       </Route>
       <Route path="*" element={<Notfound />} />
     </Routes>

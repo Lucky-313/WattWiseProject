@@ -311,6 +311,13 @@ export default function Dashboard() {
               </div>
               <div className="workspace-detail-actions">
                 {dashboard.is_locked && <span className="workspace-lock-badge">▣ Locked</span>}
+                <button
+                  type="button"
+                  className="workspace-simulation-button workspace-logbook-button"
+                  onClick={() => navigate(`/logbook?dashboard=${encodeURIComponent(id)}`)}
+                >
+                  Logbook
+                </button>
                 {!loading && hasDemoData && demoDays.length > 0 && (
                   <button
                     type="button"

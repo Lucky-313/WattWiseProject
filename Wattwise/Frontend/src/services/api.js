@@ -87,12 +87,63 @@ export function createDashboard(details) {
 }
 
 export function getDashboard(id) {
+  return requestApi(`/api/dashboards/${encodeURIComponent(id)}`, {
+    headers: getDashboardAccessHeaders(id),
+  });
+}
+
+function getDashboardAccessHeaders(id) {
   const headers = {};
   const dashboardToken = sessionStorage.getItem(
     `wattwise_dashboard_unlock_${id}`
   );
   if (dashboardToken) headers["X-Dashboard-Access"] = dashboardToken;
-  return requestApi(`/api/dashboards/${encodeURIComponent(id)}`, { headers });
+  return headers;
+}
+
+export function getDashboardLogbook(id) {
+  return requestApi(
+    `/api/dashboards/${encodeURIComponent(id)}/logbook`,
+    { headers: getDashboardAccessHeaders(id) }
+  );
+}
+
+export function syncDashboardMeasurements(id, measurements) {
+  return requestApi(
+    `/api/dashboards/${encodeURIComponent(id)}/measurements`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        ...getDashboardAccessHeaders(id),
+      },
+      body: JSON.stringify({ measurements }),
+    }
+  );
+}
+
+export function saveDashboardSlaRule(id, rule) {
+  return requestApi(
+    `/api/dashboards/${encodeURIComponent(id)}/sla-rules`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        ...getDashboardAccessHeaders(id),
+      },
+      body: JSON.stringify(rule),
+    }
+  );
+}
+
+export function clearDashboardSlaRule(id, metric) {
+  return requestApi(
+    `/api/dashboards/${encodeURIComponent(id)}/sla-rules/${encodeURIComponent(metric)}`,
+    {
+      method: "DELETE",
+      headers: getDashboardAccessHeaders(id),
+    }
+  );
 }
 
 export function verifyDashboardPasscode(id, passcode) {
