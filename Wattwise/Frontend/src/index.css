@@ -2341,3 +2341,375 @@ button {
     transition-duration: 0.01ms !important;
   }
 }
+
+.workspace-analytics-note {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 10px;
+  color: #64748b;
+  font-size: 10px;
+}
+
+.workspace-demo-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  background: #f59e0b;
+  border-radius: 50%;
+}
+
+.workspace-detail-grid.workspace-analytics-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 14px;
+}
+
+.workspace-analytics-summary .workspace-detail-card {
+  min-height: 124px;
+  gap: 10px;
+  padding: 17px;
+}
+
+.workspace-analytics-summary .workspace-detail-metric {
+  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: clamp(18px, 2vw, 24px);
+  font-variant-numeric: tabular-nums;
+}
+
+.workspace-analytics-panel,
+.workspace-weekly-panel {
+  margin-top: 14px;
+  padding: 22px;
+  background: #fff;
+  border: 1px solid #e6edf4;
+  border-radius: 11px;
+}
+
+.workspace-analytics-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+}
+
+.workspace-analytics-heading h2 {
+  margin: 6px 0 4px;
+  color: #0f172a;
+  font-size: 17px;
+  font-weight: 640;
+  letter-spacing: -0.35px;
+}
+
+.workspace-analytics-heading p {
+  margin: 0;
+  color: #64748b;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.workspace-chart-unit {
+  display: inline-block;
+  margin-top: 8px;
+  color: #0284c7;
+  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 9px;
+}
+
+.workspace-chart-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 3px;
+  background: #f1f5f9;
+  border-radius: 8px;
+}
+
+.workspace-chart-tabs button {
+  min-height: 30px;
+  padding: 0 10px;
+  color: #64748b;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.workspace-chart-tabs button.is-active {
+  color: #0369a1;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1);
+}
+
+.workspace-series-chart {
+  width: 100%;
+  margin-top: 15px;
+}
+
+.workspace-series-chart svg {
+  display: block;
+  width: 100%;
+  overflow: visible;
+}
+
+.workspace-chart-gridline {
+  stroke: #e8eef5;
+  stroke-width: 1;
+}
+
+.workspace-chart-axis {
+  fill: #94a3b8;
+  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 9px;
+}
+
+.workspace-chart-point {
+  cursor: pointer;
+  transition: r 120ms ease, fill 120ms ease;
+}
+
+.workspace-chart-point:hover,
+.workspace-chart-point:focus {
+  outline: none;
+  stroke-width: 3;
+}
+
+.workspace-selected-day {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 22px;
+  margin-top: 8px;
+  padding: 13px 15px;
+  background: #f8fafc;
+  border: 1px solid #eef2f6;
+  border-radius: 8px;
+  color: #475569;
+  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.workspace-selected-day > div {
+  display: grid;
+  gap: 5px;
+  margin-right: auto;
+}
+
+.workspace-selected-day strong {
+  color: #1e293b;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 11px;
+}
+
+.workspace-selected-sci {
+  display: grid;
+  gap: 2px;
+  color: #0369a1;
+  font-weight: 650;
+}
+
+.workspace-selected-sci small {
+  color: #64748b;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 8px;
+  font-weight: 400;
+}
+
+.workspace-weekly-bars {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: end;
+  gap: 12px;
+  min-height: 190px;
+  margin-top: 18px;
+}
+
+.workspace-week-bar {
+  min-width: 0;
+  height: 190px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+  padding: 5px;
+  color: #64748b;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.workspace-week-bar:hover,
+.workspace-week-bar.is-selected {
+  background: #f8fafc;
+  border-color: #e0f2fe;
+}
+
+.workspace-week-average {
+  color: #334155;
+  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+}
+
+.workspace-week-column {
+  width: min(100%, 78px);
+  min-height: 12px;
+  background: linear-gradient(180deg, #38bdf8, #0284c7);
+  border-radius: 5px 5px 2px 2px;
+  transition: height 180ms ease, filter 180ms ease;
+}
+
+.workspace-week-bar.is-selected .workspace-week-column,
+.workspace-week-bar:hover .workspace-week-column {
+  filter: saturate(1.25);
+}
+
+.workspace-week-label {
+  color: #334155;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.workspace-week-dates {
+  font-size: 8px;
+}
+
+.workspace-weekly-caption {
+  margin: 10px 0 0;
+  color: #94a3b8;
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.workspace-daily-details {
+  margin-top: 14px;
+  padding: 16px 18px;
+  background: #fff;
+  border: 1px solid #e6edf4;
+  border-radius: 10px;
+}
+
+.workspace-daily-details summary {
+  color: #334155;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.workspace-daily-table-wrap {
+  overflow-x: auto;
+  margin-top: 13px;
+}
+
+.workspace-daily-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.workspace-daily-table th,
+.workspace-daily-table td {
+  padding: 9px 10px;
+  border-bottom: 1px solid #eef2f6;
+  font-size: 9px;
+}
+
+.workspace-daily-table th {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.workspace-daily-table td {
+  color: #475569;
+  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.workspace-daily-table tbody tr {
+  cursor: pointer;
+}
+
+.workspace-daily-table tbody tr:hover,
+.workspace-daily-table tbody tr.is-selected {
+  background: #f0f9ff;
+}
+
+.workspace-data-source-footnote {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 18px;
+  margin-top: 13px;
+  color: #94a3b8;
+  font-size: 9px;
+}
+
+@media (max-width: 900px) {
+  .workspace-detail-grid.workspace-analytics-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .workspace-detail-grid.workspace-analytics-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .workspace-analytics-panel,
+  .workspace-weekly-panel {
+    padding: 16px 12px;
+  }
+
+  .workspace-analytics-heading {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .workspace-chart-tabs {
+    width: 100%;
+  }
+
+  .workspace-chart-tabs button {
+    flex: 1 1 auto;
+    padding: 0 7px;
+  }
+
+  .workspace-selected-day {
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .workspace-selected-day > div {
+    flex: 1 1 100%;
+  }
+
+  .workspace-weekly-bars {
+    gap: 4px;
+  }
+
+  .workspace-week-bar {
+    padding: 4px 1px;
+  }
+
+  .workspace-week-average {
+    font-size: 7px;
+  }
+
+  .workspace-week-dates {
+    font-size: 7px;
+  }
+
+  .workspace-daily-details {
+    padding: 14px 12px;
+  }
+}
+
+@media (max-width: 380px) {
+  .workspace-detail-grid.workspace-analytics-summary {
+    grid-template-columns: 1fr;
+  }
+}

@@ -10,6 +10,7 @@ import {
   uploadDashboardCsv,
   verifyDashboardPasscode,
 } from "../services/api.js";
+import { DEMO_SERIES } from "../services/demoTelemetry.js";
 
 const MAX_DASHBOARDS = 3;
 
@@ -173,9 +174,11 @@ function DashboardBar({ dashboard, onOpen, onSettings }) {
           <span className="workspace-meta-divider" />
           <span className="workspace-sci">
             SCI{" "}
-            {dashboard.sci_summary === null || dashboard.sci_summary === undefined
-              ? "—"
-              : Number(dashboard.sci_summary).toFixed(3)}
+            {String(dashboard.dashboard_id) === "1"
+              ? DEMO_SERIES[DEMO_SERIES.length - 1].sci.toFixed(6)
+              : dashboard.sci_summary === null || dashboard.sci_summary === undefined
+                ? "—"
+                : Number(dashboard.sci_summary).toFixed(3)}
           </span>
         </div>
       </div>
