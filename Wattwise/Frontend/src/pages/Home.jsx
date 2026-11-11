@@ -211,7 +211,6 @@ export default function Home() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isGuestPreview = searchParams.get("preview") === "1";
-  const isDemo = searchParams.get("demo") === "1";
   const openedSettingsFor = useRef("");
   const [dashboards, setDashboards] = useState([]);
   const [emptySlots, setEmptySlots] = useState(1);
@@ -262,19 +261,6 @@ export default function Home() {
       return undefined;
     }
 
-    if (isDemo) {
-      setDashboards([]);
-      setEmptySlots(1);
-      setTelemetry({
-        region: "GB",
-        carbon_intensity_gco2_kwh: 229,
-        ambient_temperature_c: null,
-      });
-      setPageError("");
-      setLoading(false);
-      return undefined;
-    }
-
     if (!sessionStorage.getItem(ACCESS_TOKEN_KEY)) {
       navigate("/", { replace: true });
       return undefined;
@@ -305,7 +291,7 @@ export default function Home() {
     return () => {
       active = false;
     };
-  }, [isDemo, isGuestPreview, navigate]);
+  }, [isGuestPreview, navigate]);
 
   useEffect(() => {
     if (!modalOpen) return undefined;
@@ -870,7 +856,7 @@ export default function Home() {
                       checked={removePasscode}
                       onChange={(event) => {
                         setRemovePasscode(event.target.checked);
-                        if (event.target.checked) setPasscode(false);
+                        if (event.target.checked) setSetPasscode(false);
                       }}
                     />
                     <span>Remove Passcode / I don’t want a passcode</span>

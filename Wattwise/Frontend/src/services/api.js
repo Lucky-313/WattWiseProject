@@ -29,6 +29,10 @@ export function signup(details) {
   return postAuth("/api/auth/signup", details);
 }
 
+export function demoLogin() {
+  return postAuth("/api/auth/demo", {});
+}
+
 async function requestApi(path, options = {}) {
   const token = sessionStorage.getItem(ACCESS_TOKEN_KEY);
   const headers = new Headers(options.headers || {});

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { login, signup } from "../services/api.js";
+import { ACCESS_TOKEN_KEY, demoLogin, login, signup } from "../services/api.js";
 
 const features = [
   {
@@ -89,6 +89,7 @@ export default function FrontPage() {
   const [errors, setErrors] = useState({});
   const [requestError, setRequestError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isDemoLoading, setIsDemoLoading] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
 
   const isSignup = mode === "signup";
@@ -135,7 +136,7 @@ export default function FrontPage() {
         throw new Error("The server did not return a valid sign-in session.");
       }
 
-      sessionStorage.setItem("wattwise_access_token", session.access_token);
+      sessionStorage.setItem(ACCESS_TOKEN_KEY, session.access_token);
       navigate("/home", { replace: true });
     } catch (error) {
       setRequestError(
@@ -145,6 +146,25 @@ export default function FrontPage() {
       );
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function handleDemoLogin() {
+    setRequestError("");
+    setIsDemoLoading(true);
+    try {
+      const session = await demoLogin();
+      if (!session.access_token) {
+        throw new Error("The server did not return a sign-in session.");
+      }
+      sessionStorage.setItem(ACCESS_TOKEN_KEY, session.access_token);
+      navigate("/home", { replace: true });
+    } catch (error) {
+      setRequestError(
+        error instanceof Error ? error.message : "Demo sign-in failed."
+      );
+    } finally {
+      setIsDemoLoading(false);
     }
   }
 
@@ -301,9 +321,10 @@ export default function FrontPage() {
             <button
               type="button"
               className="demo-home-button"
-              onClick={() => navigate("/home?demo=1")}
+              onClick={handleDemoLogin}
+              disabled={isDemoLoading}
             >
-              Demo home
+              {isDemoLoading ? "Signing in..." : "Demo sign in"}
             </button>
           </div>
 
