@@ -4,13 +4,34 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from AuthSchemas import RegisterRequest, LoginRequest, TokenResponse
 from Security import hash_password, verify_password, create_access_token, verify_access_token
 from database import get_user_by_email, create_user, get_user_by_id
+import secrets
 #Auth router
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 #Bearer token auth
 bearer_scheme = HTTPBearer()
 
+
+@router.post("/demo")
+def demo_login():
+    email = "wattwise-demo@localhost.local"
+    demo_user = get_user_by_email(email)
+
+    if demo_user is None:
+        demo_user = create_user(
+            name="WattWise Demo",
+            email=email,
+            password_hash=hash_password(secrets.token_urlsafe(32)),
+        )
+
+    return {
+        "access_token": create_access_token(demo_user.user_id),
+        "token_type": "bearer",
+    }
+
+
 #REGISTER
+@router.post("/signup")
 @router.post("/register")
 def register(user: RegisterRequest):
     #checks if email is already registered
@@ -25,12 +46,15 @@ def register(user: RegisterRequest):
 
     #save user to database
     new_user = create_user(name= user.name, email= user.email, password_hash= hashed_password)
+    token = create_access_token(new_user.user_id)
 
     return {
         "message": "Account created successfully",
         "user_id": new_user.user_id,
         "name": new_user.name,
-        "email": new_user.email
+        "email": new_user.email,
+        "access_token": token,
+        "token_type": "bearer"
 
     }
 

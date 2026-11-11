@@ -1,0 +1,10 @@
+{
+  "devDependencies": {
+    "autoprefixer": "^10.6.2",
+    "postcss": "^8.5.32",
+    "tailwindcss": "^4.3.5"
+  },
+  "dependencies": {
+    "framer-motion": "^14.12.0"
+  }
+}

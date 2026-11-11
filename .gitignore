@@ -231,4 +231,6 @@ __marimo__/
 __pycache__/
 *.pyc
 .vercel
-node_modules/
+.env*
+
+**/node_modules/
