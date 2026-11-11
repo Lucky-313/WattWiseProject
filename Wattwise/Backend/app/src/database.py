@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, ForeignKey, Float, Boolean
+from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, Date, ForeignKey, Float, Boolean, UniqueConstraint, inspect
 from sqlalchemy.orm import declarative_base, Session
 from datetime import datetime
 from pathlib import Path
@@ -81,6 +81,40 @@ class Dashboard(Base):
     name = Column(String(100), nullable=False)
     owner_id = Column(Integer)
     is_demo = Column(Boolean, default=False)
+    passcode_hash = Column(String(255))
+    input_method = Column(String(20), nullable=False, default="manual")
+    sci_summary = Column(Float)
+    created_at = Column(DateTime, default=datetime.now)
+
+
+class DashboardImport(Base):
+    __tablename__ = "dashboard_imports"
+
+    import_id = Column(Integer, primary_key=True, autoincrement=True)
+    dashboard_id = Column(
+        Integer, ForeignKey("dashboards.dashboard_id"), nullable=False, index=True
+    )
+    filename = Column(String(255), nullable=False)
+    content = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.now, nullable=False)
+
+class DashboardDailyMetric(Base):
+    __tablename__ = "dashboard_daily_metrics"
+    __table_args__ = (
+        UniqueConstraint("dashboard_id", "measured_on", name="uq_dashboard_metric_day"),
+    )
+
+    metric_id = Column(Integer, primary_key=True, autoincrement=True)
+    dashboard_id = Column(
+        Integer, ForeignKey("dashboards.dashboard_id"), nullable=False, index=True
+    )
+    measured_on = Column(Date, nullable=False)
+    energy_kwh = Column(Float, nullable=False)
+    carbon_intensity_gco2_kwh = Column(Float, nullable=False)
+    embodied_emissions_gco2e = Column(Float, nullable=False)
+    api_calls = Column(Float, nullable=False)
+    sci_score = Column(Float, nullable=False)
+    emissions_gco2e = Column(Float, nullable=False)
 
     # SLA RULE TABLE
 class SLA_Rule(Base):
@@ -96,6 +130,7 @@ class SLA_Rule(Base):
 
     target_metric = Column(String(100), nullable=False)
     max_threshold_limit = Column(Float, nullable=False)
+    is_active = Column(Boolean, nullable=False, default=True)
 
     # SLA LOG TABLE
 class SLA_Log(Base):
@@ -110,6 +145,10 @@ class SLA_Log(Base):
     )
 
     timestamp = Column(DateTime, default=datetime.now)
+    source_date = Column(String(10))
+    metric_key = Column(String(40))
+    observed_value = Column(Float)
+    max_threshold_limit = Column(Float)
     peak_value = Column(Float)
     percentage_difference = Column(Float)
     message = Column(Text)
@@ -231,7 +270,47 @@ def get_user_by_id(user_id):
         return session.query(User).filter(User.user_id == user_id).first()
 
 
+def initialize_database():
+    Base.metadata.create_all(engine)
+    dashboard_columns = {
+        column["name"] for column in inspect(engine).get_columns("dashboards")
+    }
+    new_columns = {
+        "passcode_hash": "VARCHAR(255)",
+        "input_method": "VARCHAR(20) NOT NULL DEFAULT 'manual'",
+        "sci_summary": "FLOAT",
+        "created_at": "DATETIME",
+    }
+    with engine.begin() as connection:
+        for column_name, column_type in new_columns.items():
+            if column_name not in dashboard_columns:
+                connection.exec_driver_sql(
+                    f"ALTER TABLE dashboards ADD COLUMN {column_name} {column_type}"
+                )
+        sla_log_columns = {
+            column["name"] for column in inspect(engine).get_columns("sla_logs")
+        }
+        new_sla_log_columns = {
+            "source_date": "VARCHAR(10)",
+            "metric_key": "VARCHAR(40)",
+            "observed_value": "FLOAT",
+            "max_threshold_limit": "FLOAT",
+        }
+        for column_name, column_type in new_sla_log_columns.items():
+            if column_name not in sla_log_columns:
+                connection.exec_driver_sql(
+                    f"ALTER TABLE sla_logs ADD COLUMN {column_name} {column_type}"
+                )
+        sla_rule_columns = {
+            column["name"] for column in inspect(engine).get_columns("sla_rules")
+        }
+        if "is_active" not in sla_rule_columns:
+            connection.exec_driver_sql(
+                "ALTER TABLE sla_rules ADD COLUMN is_active BOOLEAN NOT NULL DEFAULT 1"
+            )
+
+
 # Create the database tables
 if __name__ == "__main__":
-    Base.metadata.create_all(engine)
+    initialize_database()
     print("WattWise database created successfully!")

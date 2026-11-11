@@ -38,6 +38,31 @@ def create_access_token(user_id: int):
     return token
 
 
+def create_dashboard_access_token(user_id: int, dashboard_id: int):
+    expire = datetime.now(timezone.utc) + timedelta(minutes=15)
+    payload = {
+        "sub": str(user_id),
+        "dashboard_id": dashboard_id,
+        "purpose": "dashboard",
+        "exp": expire,
+    }
+    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def verify_dashboard_access_token(
+    token: str, user_id: int, dashboard_id: int
+) -> bool:
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return (
+            payload.get("purpose") == "dashboard"
+            and payload.get("sub") == str(user_id)
+            and payload.get("dashboard_id") == dashboard_id
+        )
+    except (jwt.InvalidTokenError, ValueError, TypeError):
+        return False
+
+
 #Verify and decode JWT token
 def verify_access_token(token: str):
     try:
@@ -45,7 +70,7 @@ def verify_access_token(token: str):
 
         user_id = payload.get("sub")
 
-        if user_id is None:
+        if user_id is None or payload.get("purpose") is not None:
             return None
 
         return int(user_id)
