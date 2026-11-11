@@ -311,6 +311,15 @@ export default function Dashboard() {
               </div>
               <div className="workspace-detail-actions">
                 {dashboard.is_locked && <span className="workspace-lock-badge">▣ Locked</span>}
+                {!loading && hasDemoData && demoDays.length > 0 && (
+                  <button
+                    type="button"
+                    className="workspace-simulation-button"
+                    onClick={() => navigate(`/dashboard/${encodeURIComponent(id)}/simulation`)}
+                  >
+                    Simulate impact
+                  </button>
+                )}
                 <button
                   type="button"
                   className="workspace-settings-button"

@@ -2648,15 +2648,521 @@ button {
   font-size: 9px;
 }
 
+.workspace-simulation-button {
+  min-height: 36px;
+  padding: 0 13px;
+  color: #0369a1;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 7px;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.workspace-simulation-button:hover {
+  background: #e0f2fe;
+  border-color: #7dd3fc;
+}
+
+.workspace-simulation-page .workspace-detail-heading {
+  align-items: flex-end;
+}
+
+.workspace-simulation-reset {
+  flex: 0 0 auto;
+  min-height: 36px;
+}
+
+.workspace-simulation-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 11px;
+  color: #64748b;
+  font-size: 10px;
+}
+
+.workspace-simulation-metrics {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.workspace-simulation-score,
+.workspace-simulation-field {
+  min-width: 0;
+  min-height: 132px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 9px;
+  padding: 15px;
+  background: #fff;
+  border: 1px solid #e6edf4;
+  border-radius: 10px;
+}
+
+.workspace-simulation-score {
+  background: linear-gradient(145deg, #f0f9ff, #fff 75%);
+  border-color: #bae6fd;
+}
+
+.workspace-simulation-score > strong {
+  color: #0369a1;
+  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: clamp(18px, 2vw, 25px);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.7px;
+}
+
+.workspace-simulation-score > span:not(.workspace-card-label) {
+  color: #64748b;
+  font-size: 9px;
+}
+
+.workspace-simulation-score > small {
+  color: #94a3b8;
+  font-size: 8px;
+  line-height: 1.45;
+}
+
+.workspace-simulation-field > span {
+  min-height: 24px;
+  color: #475569;
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.workspace-simulation-field input {
+  width: 100%;
+  min-width: 0;
+  height: 37px;
+  padding: 0 9px;
+  color: #0f172a;
+  background: #f8fafc;
+  border: 1px solid #dbe5ee;
+  border-radius: 6px;
+  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.workspace-simulation-field input:focus {
+  outline: 2px solid #7dd3fc;
+  outline-offset: 1px;
+}
+
+.workspace-simulation-field > small {
+  color: #94a3b8;
+  font-size: 8px;
+}
+
+.workspace-simulation-validation {
+  margin: 9px 2px 0;
+  color: #b91c1c;
+  font-size: 10px;
+}
+
+.workspace-simulation-panel {
+  margin-top: 13px;
+}
+
+.workspace-simulation-chart {
+  margin-top: 18px;
+}
+
+.workspace-simulation-average-line {
+  stroke: #0ea5e9;
+  stroke-width: 1.2;
+  stroke-dasharray: 3 5;
+  opacity: 0.75;
+}
+
+.workspace-simulation-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+  margin: -5px 0 4px 8%;
+  color: #64748b;
+  font-size: 9px;
+}
+
+.workspace-simulation-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.workspace-simulation-legend i {
+  width: 16px;
+  height: 0;
+  display: inline-block;
+  border-top: 2px solid;
+}
+
+.workspace-legend-scenario {
+  border-color: #0284c7 !important;
+}
+
+.workspace-legend-baseline {
+  border-color: #94a3b8 !important;
+  border-top-style: dashed !important;
+}
+
+.workspace-legend-average {
+  border-color: #0ea5e9 !important;
+  border-top-style: dashed !important;
+}
+
+.workspace-simulation-selected {
+  margin-top: 12px;
+}
+
+.workspace-simulation-empty {
+  margin-top: 45px;
+  border-style: solid;
+}
+
+.workspace-simulation-empty .workspace-secondary-button {
+  margin-top: 4px;
+}
+
+.sci-calculator-page {
+  min-height: 100vh;
+  padding: clamp(32px, 7vw, 76px) 20px;
+  color: #0f172a;
+  background:
+    radial-gradient(ellipse at 86% 0%, rgba(56, 189, 248, 0.1), transparent 34%),
+    #f8fafc;
+}
+
+.sci-calculator-shell {
+  width: min(100%, 980px);
+  margin: 0 auto;
+}
+
+.sci-calculator-heading {
+  max-width: 650px;
+  margin: 0 auto 28px;
+  text-align: center;
+}
+
+.sci-calculator-eyebrow {
+  color: #0284c7;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.1px;
+}
+
+.sci-calculator-heading h1 {
+  margin: 10px 0;
+  font-size: clamp(30px, 5vw, 43px);
+  font-weight: 680;
+  letter-spacing: -1.6px;
+}
+
+.sci-calculator-heading p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.sci-calculator-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.85fr);
+  align-items: stretch;
+  gap: 14px;
+}
+
+.sci-calculator-card,
+.sci-calculator-results,
+.sci-calculator-method {
+  background: #fff;
+  border: 1px solid #e2eaf2;
+  border-radius: 12px;
+  box-shadow: 0 12px 35px rgba(15, 23, 42, 0.035);
+}
+
+.sci-calculator-card {
+  padding: 22px;
+}
+
+.sci-calculator-card-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.sci-calculator-card-heading h2 {
+  margin: 0 0 5px;
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.3px;
+}
+
+.sci-calculator-card-heading p {
+  margin: 0;
+  color: #64748b;
+  font-size: 10px;
+}
+
+.sci-calculator-example {
+  min-height: 32px;
+  padding: 0 10px;
+  color: #0369a1;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  font-size: 9px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sci-calculator-example:hover {
+  background: #e0f2fe;
+}
+
+.sci-calculator-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 13px;
+}
+
+.sci-calculator-field {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.sci-calculator-field-title {
+  color: #334155;
+  font-size: 10px;
+  font-weight: 620;
+}
+
+.sci-calculator-input-wrap {
+  min-width: 0;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #dbe5ee;
+  border-radius: 7px;
+}
+
+.sci-calculator-input-wrap:focus-within {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.14);
+}
+
+.sci-calculator-input-wrap input {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  padding: 0 10px;
+  color: #0f172a;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sci-calculator-input-wrap > span {
+  flex: 0 0 auto;
+  padding-right: 9px;
+  color: #94a3b8;
+  font-size: 8px;
+}
+
+.sci-calculator-field > small {
+  min-height: 25px;
+  color: #94a3b8;
+  font-size: 8px;
+  line-height: 1.5;
+}
+
+.sci-calculator-error {
+  color: #b91c1c;
+  font-size: 9px;
+}
+
+.sci-calculator-results {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+}
+
+.sci-calculator-result-primary {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 16px;
+  background: linear-gradient(140deg, #f0f9ff, #fff);
+  border: 1px solid #d8f1fd;
+  border-radius: 9px;
+}
+
+.sci-calculator-result-primary > strong {
+  color: #0369a1;
+  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: clamp(25px, 3.2vw, 34px);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -1px;
+}
+
+.sci-calculator-result-primary > span:last-child {
+  color: #64748b;
+  font-size: 9px;
+}
+
+.sci-calculator-result-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 2px;
+  border-bottom: 1px solid #eef2f6;
+  color: #64748b;
+  font-size: 9px;
+}
+
+.sci-calculator-result-row strong {
+  color: #334155;
+  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 9px;
+  font-weight: 600;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.sci-calculator-result-row:last-child {
+  margin-top: auto;
+  border-bottom: 0;
+}
+
+.sci-calculator-method {
+  margin-top: 14px;
+  padding: 20px 22px;
+}
+
+.sci-calculator-equation {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0 11px;
+  color: #0f172a;
+  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 14px;
+}
+
+.sci-calculator-fraction {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  text-align: center;
+}
+
+.sci-calculator-fraction span:first-child {
+  padding: 0 4px 5px;
+  border-bottom: 1px solid #94a3b8;
+  font-size: 11px;
+}
+
+.sci-calculator-fraction span:last-child {
+  color: #0369a1;
+  font-size: 10px;
+}
+
+.sci-calculator-method > p {
+  max-width: 780px;
+  margin: 0;
+  color: #64748b;
+  font-size: 9px;
+  line-height: 1.7;
+}
+
 @media (max-width: 900px) {
   .workspace-detail-grid.workspace-analytics-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .workspace-simulation-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .sci-calculator-grid {
+    grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 640px) {
   .workspace-detail-grid.workspace-analytics-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .workspace-simulation-page .workspace-detail-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .workspace-simulation-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .workspace-simulation-score,
+  .workspace-simulation-field {
+    min-height: 124px;
+    padding: 12px;
+  }
+
+  .workspace-simulation-score > strong {
+    font-size: 19px;
+  }
+
+  .sci-calculator-page {
+    padding: 30px 14px;
+  }
+
+  .sci-calculator-card,
+  .sci-calculator-results,
+  .sci-calculator-method {
+    padding: 16px;
+  }
+
+  .sci-calculator-fields {
+    grid-template-columns: 1fr;
+    gap: 13px;
+  }
+
+  .sci-calculator-field > small {
+    min-height: 0;
+  }
+
+  .sci-calculator-heading {
+    margin-bottom: 20px;
+  }
+
+  .sci-calculator-equation {
+    gap: 7px;
+    font-size: 12px;
+  }
+
+  .sci-calculator-fraction span:first-child {
+    font-size: 9px;
   }
 
   .workspace-analytics-panel,
@@ -2711,5 +3217,14 @@ button {
 @media (max-width: 380px) {
   .workspace-detail-grid.workspace-analytics-summary {
     grid-template-columns: 1fr;
+  }
+
+  .workspace-simulation-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-simulation-score,
+  .workspace-simulation-field {
+    min-height: 110px;
   }
 }

@@ -8,7 +8,6 @@ export default function Layout() {
         <nav>
           <NavLink to="/home">Dashboard</NavLink>{" | "}
           <NavLink to="/calculator">SCI Calculator</NavLink>{" | "}
-          <NavLink to="/simulation">Simulation</NavLink>{" | "}
           <NavLink to="/logbook">Logbook</NavLink>{" | "}
           <NavLink to="/reports">Reports</NavLink>
         </nav>

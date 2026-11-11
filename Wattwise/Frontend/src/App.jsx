@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import Layout from "./Layout.jsx";
 import FrontPage from "./pages/FrontPage.jsx";
 import Home from "./pages/Home.jsx";
@@ -15,9 +15,10 @@ export default function App() {
       <Route path="/" element={<FrontPage />} />
       <Route path="/home" element={<Home />} />
       <Route path="/dashboard/:id" element={<Dashboard />} />
+      <Route path="/dashboard/:id/simulation" element={<Simulation />} />
       <Route element={<Layout />}>
         <Route path="/calculator" element={<Calculator />} />
-        <Route path="/simulation" element={<Simulation />} />
+        <Route path="/simulation" element={<Navigate to="/home" replace />} />
         <Route path="/logbook" element={<Logbook />} />
         <Route path="/reports" element={<Reports />} />
       </Route>

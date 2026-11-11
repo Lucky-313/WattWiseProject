@@ -10,15 +10,17 @@ function createDemoSeries() {
     const intensity = 240 + 62 * wave + (index % 4) * 11;
     const apiCalls =
       82000 + (index % 7) * 5400 + Math.round(9000 * Math.cos(index * 0.31));
-    const emissions = (energy * intensity) / 1000;
+    const embodied = 180 + (index % 6) * 24 + Math.round(45 * Math.sin(index * 0.27));
+    const emissions = (energy * intensity + embodied) / 1000;
 
     return {
       date,
       apiCalls,
       energy,
       intensity,
+      embodied,
       emissions,
-      sci: (emissions * 1000) / apiCalls,
+      sci: (energy * intensity + embodied) / apiCalls,
     };
   });
 }
