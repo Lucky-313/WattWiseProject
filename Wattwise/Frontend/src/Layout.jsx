@@ -6,7 +6,7 @@ export default function Layout() {
       <header>
         <h1>WattWise</h1>
         <nav>
-          <NavLink to="/">Dashboard</NavLink>{" | "}
+          <NavLink to="/home">Dashboard</NavLink>{" | "}
           <NavLink to="/calculator">SCI Calculator</NavLink>{" | "}
           <NavLink to="/simulation">Simulation</NavLink>{" | "}
           <NavLink to="/logbook">Logbook</NavLink>{" | "}
