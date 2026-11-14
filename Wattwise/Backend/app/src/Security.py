@@ -9,8 +9,9 @@ from pwdlib import PasswordHash
 # config password hashing
 password_hash = PasswordHash.recommended()
 
-# config JWT
-SECRET_KEY = os.getenv("SECRET_KEY")
+# config JWT - hard coding the key for easier use
+#SECRET_KEY = os.getenv("SECRET_KEY") - proper setup for Secret key
+SECRET_KEY = "wattwise-development-secret-key"
 
 if not SECRET_KEY:
     raise RuntimeError("SECRET_KEY variable is not set")
