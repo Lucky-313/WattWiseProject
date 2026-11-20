@@ -29,6 +29,14 @@ export function signup(details) {
   return postAuth("/api/auth/signup", details);
 }
 
+export function forgotPassword(email) {
+  return postAuth("/api/auth/forgot-password", {email})
+}
+
+export function resetPassword(token, newPassword) {
+  return postAuth("/api/auth/reset-password", {token, new_password: newPassword})
+}
+
 export function demoLogin() {
   return postAuth("/api/auth/demo", {});
 }

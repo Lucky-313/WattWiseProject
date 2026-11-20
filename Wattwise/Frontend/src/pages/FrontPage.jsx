@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ACCESS_TOKEN_KEY, demoLogin, login, signup } from "../services/api.js";
+import { ACCESS_TOKEN_KEY, demoLogin, login, signup, forgotPassword } from "../services/api.js";
 
 const features = [
   {
@@ -91,6 +91,10 @@ export default function FrontPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isDemoLoading, setIsDemoLoading] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetError, setResetError] = useState("");
+  const [resetMessage, setResetMessage] = useState("");
 
   const isSignup = mode === "signup";
 
@@ -146,6 +150,35 @@ export default function FrontPage() {
       );
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function handleForgotPassword(event) {
+
+    event.preventDefault();
+
+    setResetError("");
+    setResetMessage("");
+
+    if (!resetEmail.trim()) {
+      setResetError("enter your email address");
+      return;
+    }
+
+    setResetLoading(true);
+
+    try {
+      
+      const result = await forgotPassword(resetEmail.trim());
+      setResetMessage(result.message);
+    } catch (error) {
+      setResetError(
+        error instanceof Error
+          ? error.message
+          : "unable to request password reset"
+      );
+    } finally {
+      setResetLoading(false)
     }
   }
 
@@ -291,7 +324,7 @@ export default function FrontPage() {
                   </span>
                 )}
               </div>
-
+              
               {requestError && (
                 <div className="request-error" role="alert">
                   <span aria-hidden="true">!</span>
@@ -433,19 +466,44 @@ export default function FrontPage() {
             >
               ×
             </button>
+
             <span className="modal-icon" aria-hidden="true">✳</span>
             <h2 id="reset-title">Password reset</h2>
             <p>
-              Password reset isn’t available yet. Contact your workspace
-              administrator for help recovering your account.
+              Enter your email address and we'll send you a password reset link
             </p>
-            <button
-              type="button"
-              className="submit-button"
-              onClick={() => setResetOpen(false)}
-            >
-              Got it
-            </button>
+
+            <form className="auth-form" onSubmit={handleForgotPassword}>
+              <div className="field-group">
+                <label htmlFor="reset-email">Email</label>
+                <input
+                  id="reset-email"
+                  type="email"
+                  placeholder="you@company.com"
+                  value={resetEmail}
+                  onChange={(event) => setResetEmail(event.target.value)}
+                  required
+                  />
+              </div>
+
+              {resetError && (
+                <div className="request-error" role="alert">
+                  {resetError}
+                </div>
+              )}
+
+              {resetMessage && (
+                <p role="status">{resetMessage}</p>
+              )}
+
+              <button
+                type="submit"
+                className="submit-button"
+                disabled={resetLoading}
+              >
+                {resetLoading ? "sending" : "send reset link"}
+              </button>
+            </form> 
           </section>
         </div>
       )}
