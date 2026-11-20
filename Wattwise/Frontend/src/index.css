@@ -4110,3 +4110,87 @@ button {
     min-height: 110px;
   }
 }
+
+
+
+/* Password Reset Page */
+.reset-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background-color: #f5f8fc;
+}
+
+.reset-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 36px;
+  background: #fff;
+  border: 1px solid #e1e7ef;
+  border-radius: 16px;
+  box-shadow: 0 12px 35px rgba(25, 45, 75, 0.10);
+}
+
+.reset-card h1 {
+  margin: 0 0 10px;
+  color: #17243a;
+  font-size: 26px;
+  font-weight: 600;
+}
+
+.reset-description {
+  margin: 0 0 20px;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.reset-card .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.reset-card label {
+    color: #26364d;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.reset-card input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 13px;
+    border: 1px solid #d7e0eb;
+    border-radius: 8px;
+    outline: none;
+    font-size: 14px;
+}
+
+.reset-card input:focus {
+    border-color: #0ea5e9;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
+}
+
+.reset-card .submit-button {
+    width: 100%;
+    margin-top: 8px;
+}
+
+.reset-error {
+    color: #dc2626;
+    font-size: 13px;
+    margin-bottom: 16px;
+}
+
+.reset-success {
+    color: #15803d;
+    font-size: 14px;
+    margin-bottom: 16px;
+}
+
+
+
