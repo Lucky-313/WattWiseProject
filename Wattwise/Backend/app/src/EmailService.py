@@ -5,10 +5,6 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).resolve().parent / ".env")
 
-print("ENV path:", Path(__file__).resolve().parents[1] / ".env")
-print("API key loaded:", bool(os.getenv("RESEND_API_KEY")))
-print("Test email loaded:", bool(os.getenv("RESEND_TEST_EMAIL")))
-
 # Configure Resend
 resend.api_key = os.getenv("RESEND_API_KEY")
 
@@ -21,10 +17,10 @@ FRONTEND_URL = os.getenv(
 def send_password_reset_email(reset_token:str):
 
     if not resend.api_key:
-        raise RuntimeError("APIemail config is missing")
+        raise RuntimeError("API config is missing")
 
     if not TEST_EMAIL:
-        raise RuntimeError("test email not work")
+        raise RuntimeError("email config is missing")
 
     reset_link = (f"{FRONTEND_URL}/reset-password?token={reset_token}")
 
