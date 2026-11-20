@@ -8,6 +8,7 @@ import Simulation from "./pages/Simulation.jsx";
 import Logbook from "./pages/Logbook.jsx";
 import Reports from "./pages/Reports.jsx";
 import Notfound from "./pages/Notfound.jsx";
+import ResetPassword from "./pages/ResetPassword.jsx";
 
 export default function App() {
   return (
@@ -24,6 +25,7 @@ export default function App() {
         <Route path="/simulation" element={<Navigate to="/home" replace />} />
       </Route>
       <Route path="*" element={<Notfound />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
     </Routes>
   );
 }
