@@ -696,6 +696,43 @@ def read_dashboard_logbook(
         }
 
 
+
+@router.get("/dashboards/{dashboard_id}/measurements")
+def read_dashboard_measurements(
+    dashboard_id: int,
+    dashboard_access: str | None = Header(
+        default=None, alias="X-Dashboard-Access"
+    ),
+    owner_id: int = Depends(authenticated_user_id),
+) -> dict[str, object]:
+    with DatabaseSession(engine) as session:
+        dashboard = get_owned_dashboard(session, dashboard_id, owner_id)
+        require_dashboard_access(dashboard, owner_id, dashboard_access)
+
+        measurements = (
+            session.query(DashboardDailyMetric)
+            .filter(DashboardDailyMetric.dashboard_id == dashboard_id)
+            .order_by(DashboardDailyMetric.measured_on.asc())
+            .all()
+        )
+
+        return {
+            "dashboard_id": dashboard_id,
+            "measurements": [
+                {
+                    "date": item.measured_on.isoformat(),
+                    "energy": item.energy_kwh,
+                    "intensity": item.carbon_intensity_gco2_kwh,
+                    "embodied": item.embodied_emissions_gco2e,
+                    "apiCalls": item.api_calls,
+                    "sci": item.sci_score,
+                    "emissions": item.emissions_gco2e / 1000,
+                }
+                for item in measurements
+            ],
+        }
+
+
 @router.put("/dashboards/{dashboard_id}/measurements")
 def sync_dashboard_measurements(
     dashboard_id: int,

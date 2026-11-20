@@ -310,6 +310,27 @@ def initialize_database():
             )
 
 
+def add_measurement(service_id, energy_used, embodied_emissions, functional_unit):
+        with Session(engine) as session:
+            service = session.get(Service, service_id)
+
+            if service is None:
+                raise ValueError("Service not found")
+
+            measurement = Measurement(
+                service_id=service_id,
+                energy_used=energy_used,
+                embodied_emissions=embodied_emissions,
+                functional_unit=functional_unit
+            )
+
+            session.add(measurement)
+            session.commit()
+            session.refresh(measurement)
+
+            return measurement.measurement_id
+
+
 # Create the database tables
 if __name__ == "__main__":
     initialize_database()
