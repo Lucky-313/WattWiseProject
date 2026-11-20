@@ -1,0 +1,4 @@
+#To be able to run Resend to send the reset email you must setup an account with resend input your api key
+RESEND_API_KEY=PASTEKEYHERE #do not use quotation marks when pasting it in
+#When testing you must use the email you signed up with in Resend otherwise it won't send the email
+RESEND_TEST_EMAIL=PASTEEMAILHERE # do not use quotation marks when pasting it in, make sure email is fully in lowercase
