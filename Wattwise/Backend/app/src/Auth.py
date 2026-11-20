@@ -1,9 +1,10 @@
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-from AuthSchemas import RegisterRequest, LoginRequest, TokenResponse
-from Security import hash_password, verify_password, create_access_token, verify_access_token
-from database import get_user_by_email, create_user, get_user_by_id
+from EmailService import send_password_reset_email
+from AuthSchemas import RegisterRequest, LoginRequest, TokenResponse, ForgotPasswordRequest, ResetPasswordRequest
+from Security import hash_password, verify_password, create_access_token, verify_access_token, create_password_reset_token, verify_password_reset_token
+from database import get_user_by_email, create_user, get_user_by_id, update_user_password
 import secrets
 #Auth router
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -95,4 +96,56 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(bearer_
         "user_id": existing_user.user_id,
         "name": existing_user.name,
         "email": existing_user.email
+    }
+
+
+# REQUEST PASSWORD RESET
+@router.post("/forgot-password")
+def forgot_password(request: ForgotPasswordRequest):
+
+    existing_user = get_user_by_email(request.email)
+
+    # sends email only if account exists
+    if existing_user:
+        reset_token = create_password_reset_token(existing_user.user_id)
+        send_password_reset_email(reset_token)
+
+    return {
+        "message": "If the account exists a password reset email has been sent"
+    }
+
+
+# RESET PASSWORD
+@router.post("/reset-password")
+def reset_password(request: ResetPasswordRequest):
+
+    # verify reset token
+    user_id = verify_password_reset_token(request.token)
+
+    if user_id is None:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid or expired reset link"
+        )
+
+    # verify user still exists
+    existing_user = get_user_by_id(user_id)
+
+    if not existing_user:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid or expired reset link"
+        )
+
+    # hash new password
+    new_password_hash = hash_password(request.new_password)
+
+    # Update database
+    updated = update_user_password(user_id, new_password_hash)
+
+    if not updated:
+        raise HTTPException(status_code=400, detail="password reset failed")
+
+    return{
+        "message": "Password successfully reset"
     }
