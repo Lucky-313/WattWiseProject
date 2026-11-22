@@ -350,15 +350,6 @@ export default function FrontPage() {
               >
                 Explore Live Dashboards <span aria-hidden="true">↗</span>
               </button>
-              <button
-                type="button"
-                className="button-secondary"
-                onClick={() => {
-                  changeMode("signup");
-                }}
-              >
-                + Create New Workspace
-              </button>
             </div>
             <div className="hero-metrics" aria-label="WattWise metrics">
               <div>
