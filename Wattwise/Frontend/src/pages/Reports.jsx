@@ -175,14 +175,7 @@ function ReportModal({ report, onClose }) {
     try {
       const doc = createReportPdf(report, PDFConstructor);
       const filename = `${pdfText(report.report_name).replace(/[^a-z0-9-_ ]/gi, "").trim() || "wattwise-report"}.pdf`;
-      const pdfTab = window.open(doc.output("bloburl"), "_blank");
-      if (pdfTab) {
-        pdfTab.opener = null;
-      }
       doc.save(filename);
-      if (!pdfTab) {
-        setPdfError("The PDF downloaded, but pop-ups are blocked. Allow pop-ups to open it in a new tab.");
-      }
     } catch (error) {
       console.error("Could not generate the report PDF.", error);
       setPdfError("The PDF could not be generated. Please try again.");
