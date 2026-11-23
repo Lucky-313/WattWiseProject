@@ -175,7 +175,14 @@ function ReportModal({ report, onClose }) {
     try {
       const doc = createReportPdf(report, PDFConstructor);
       const filename = `${pdfText(report.report_name).replace(/[^a-z0-9-_ ]/gi, "").trim() || "wattwise-report"}.pdf`;
+      const pdfTab = window.open(doc.output("bloburl"), "_blank");
+      if (pdfTab) {
+        pdfTab.opener = null;
+      }
       doc.save(filename);
+      if (!pdfTab) {
+        setPdfError("The PDF downloaded, but pop-ups are blocked. Allow pop-ups to open it in a new tab.");
+      }
     } catch (error) {
       console.error("Could not generate the report PDF.", error);
       setPdfError("The PDF could not be generated. Please try again.");
@@ -297,6 +304,43 @@ export default function Reports() {
   const availableMetrics = metricOptions.filter(
     (metric) => !activeRules.some((rule) => rule.target_metric === metric.key)
   );
+
+  const filteredReports = activeRules.length === 0
+  ? []
+  : (logbook?.reports || []).flatMap((report) => {
+      const breaches = report.details?.breaches || [report.details || {}];
+
+      // Only keep breaches that exceed the limit
+      const matchingBreaches = breaches.filter((breach) => {
+        const metric = breach.target_metric || breach.metric_key;
+
+        const rule = activeRules.find(
+          (activeRule) => activeRule.target_metric === metric
+        );
+
+        return rule &&
+          Number(breach.observed_value) >
+          Number(rule.max_threshold_limit);
+      });
+
+      // Every active limit must have been breached
+      const matchesAllRules = activeRules.every((rule) =>
+        matchingBreaches.some(
+          (breach) =>
+            rule.target_metric === (breach.target_metric || breach.metric_key)
+        )
+      );
+
+      if (!matchesAllRules) return [];
+
+      return [{
+        ...report,
+        details: {
+          ...report.details,
+          breaches: matchingBreaches,
+        },
+      }];
+    });
 
   useEffect(() => {
     if (!sessionStorage.getItem(ACCESS_TOKEN_KEY)) {
@@ -658,12 +702,12 @@ export default function Reports() {
                     <p>Reports are retained as a timeline and do not replace older incidents.</p>
                   </div>
                   <span className="workspace-report-rule-count">
-                    {logbook.reports.length} REPORTS
+                    {filteredReports.length} REPORTS
                   </span>
                 </div>
-                {logbook.reports.length ? (
+                {filteredReports.length ? (
                   <div className="workspace-breach-list">
-                    {logbook.reports.map((report) => (
+                    {filteredReports.map((report) => (
                       <button
                         type="button"
                         key={report.report_id}
@@ -695,9 +739,9 @@ export default function Reports() {
                     <div>
                       <strong>No breach reports yet</strong>
                       <p>
-                        {logbook.measurement_days
-                          ? "Current readings are within their configured limits, or no limits have been set."
-                          : "Reports will appear here when data exceeds a configured limit."}
+                        {activeRules.length === 0
+                          ? "Set at least one monitoring limit to see matching breach reports."
+                          : "No days have breached every currently active monitoring limit."}
                       </p>
                     </div>
                   </div>
@@ -713,3 +757,4 @@ export default function Reports() {
     </main>
   );
 }
+
