@@ -1,6 +1,8 @@
 
 from sqlalchemy.orm import Session
-from database import engine, Project, Service, Measurement
+from database import engine, Project, Service, Measurement, Base, initialize_database
+
+Base.metadata.create_all(engine)
 
 # Connect to the database
 with Session(engine) as session:
