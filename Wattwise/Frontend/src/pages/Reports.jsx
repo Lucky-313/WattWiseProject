@@ -407,7 +407,9 @@ export default function Reports() {
   }, [logbook]);
 
   async function refreshLogbook() {
-    setLogbook(await getDashboardLogbook(id));
+    const updatedLogbook = await getDashboardLogbook(id);
+    setLogbook(updatedLogbook);
+    setReportsCleared(false);
   }
 
   async function saveLimit(event, targetMetric, value) {
