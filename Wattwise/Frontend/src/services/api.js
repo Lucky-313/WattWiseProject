@@ -4,13 +4,24 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").replace(
 );
 export const ACCESS_TOKEN_KEY = "wattwise_access_token";
 
+async function readResponse(response) {
+  const responseText = await response.text();
+  if (!responseText) return {};
+
+  try {
+    return JSON.parse(responseText);
+  } catch {
+    return { detail: responseText };
+  }
+}
+
 async function postAuth(path, payload) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
-  const result = await response.json();
+  const result = await readResponse(response);
 
   if (!response.ok) {
     const detail = result.detail;
@@ -52,15 +63,7 @@ async function requestApi(path, options = {}) {
     ...options,
     headers,
   });
-  const responseText = await response.text();
-  let result = {};
-  if (responseText) {
-    try {
-      result = JSON.parse(responseText);
-    } catch {
-      result = { detail: responseText };
-    }
-  }
+  const result = await readResponse(response);
 
   if (!response.ok) {
     if (response.status === 401) {

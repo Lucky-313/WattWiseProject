@@ -8,3 +8,4 @@ email-validator
 psycopg[binary]
 
 resend
+python-dotenv
