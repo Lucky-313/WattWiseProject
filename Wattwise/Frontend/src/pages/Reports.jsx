@@ -300,11 +300,11 @@ export default function Reports() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [selectedReport, setSelectedReport] = useState(null);
+  const [reportsCleared, setReportsCleared] = useState(false);
   const activeRules = logbook?.rules || [];
   const availableMetrics = metricOptions.filter(
     (metric) => !activeRules.some((rule) => rule.target_metric === metric.key)
   );
-
   const filteredReports = activeRules.length === 0
   ? []
   : (logbook?.reports || []).flatMap((report) => {
@@ -341,6 +341,8 @@ export default function Reports() {
         },
       }];
     });
+
+  const visibleReports = reportsCleared ? [] : filteredReports;
 
   useEffect(() => {
     if (!sessionStorage.getItem(ACCESS_TOKEN_KEY)) {
@@ -701,13 +703,26 @@ export default function Reports() {
                     <h2>Breach reports</h2>
                     <p>Reports are retained as a timeline and do not replace older incidents.</p>
                   </div>
-                  <span className="workspace-report-rule-count">
-                    {filteredReports.length} REPORTS
-                  </span>
+                  <div className="workspace-report-heading-actions">
+                    <span className="workspace-report-rule-count">
+                      {visibleReports.length} REPORTS
+                    </span>
+                    <button
+                      type="button"
+                      className="workspace-active-limit-remove"
+                      onClick={() => {
+                        setReportsCleared(true);
+                        setSelectedReport(null);
+                      }}
+                      disabled={visibleReports.length === 0}
+                    >
+                      Clear report view
+                    </button>
+                  </div>
                 </div>
-                {filteredReports.length ? (
+                {visibleReports.length ? (
                   <div className="workspace-breach-list">
-                    {filteredReports.map((report) => (
+                    {visibleReports.map((report) => (
                       <button
                         type="button"
                         key={report.report_id}
@@ -737,11 +752,15 @@ export default function Reports() {
                   <div className="workspace-report-empty">
                     <span aria-hidden="true">✓</span>
                     <div>
-                      <strong>No breach reports yet</strong>
+                      <strong>
+                        {reportsCleared ? "Report view cleared" : "No matching breach reports"}
+                      </strong>
                       <p>
-                        {activeRules.length === 0
-                          ? "Set at least one monitoring limit to see matching breach reports."
-                          : "No days have breached every currently active monitoring limit."}
+                        {reportsCleared
+                          ? "Historical reports are still saved and will reappear when you reopen this page."
+                          : activeRules.length === 0
+                            ? "Set at least one monitoring limit to see matching breach reports."
+                            : "No days have breached every currently active monitoring limit."}
                       </p>
                     </div>
                   </div>
@@ -757,4 +776,3 @@ export default function Reports() {
     </main>
   );
 }
-
