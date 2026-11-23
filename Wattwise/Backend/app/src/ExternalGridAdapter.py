@@ -1,4 +1,5 @@
 import json
+import math
 from urllib.request import urlopen
 from SciMetric import SCIMetric
 
@@ -29,6 +30,37 @@ class ExternalGridAdapter:
         except Exception:
 
             return self.fallback_intensity
+
+    def fetch_live_generation_mix(self) -> list[dict[str, float | str]]:
+        url = f"{self.base_api_url}/generation"
+
+        with urlopen(url, timeout=5) as response:
+            data = json.loads(response.read().decode("utf-8"))
+
+        generation_mix = data["data"]["generationmix"]
+        if not isinstance(generation_mix, list) or not generation_mix:
+            raise ValueError("Grid generation mix is empty or invalid")
+
+        validated_mix = []
+        for item in generation_mix:
+            if not isinstance(item, dict):
+                raise ValueError("Grid generation mix contains an invalid entry")
+
+            fuel = item.get("fuel")
+            percentage = item.get("perc")
+            if (
+                not isinstance(fuel, str)
+                or not fuel
+                or isinstance(percentage, bool)
+                or not isinstance(percentage, (int, float))
+                or not math.isfinite(percentage)
+                or percentage < 0
+            ):
+                raise ValueError("Grid generation mix contains an invalid entry")
+
+            validated_mix.append({"fuel": fuel, "percentage": float(percentage)})
+
+        return validated_mix
 
 
     def apply_grid_intensity(

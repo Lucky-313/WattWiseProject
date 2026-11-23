@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ACCESS_TOKEN_KEY, getDashboard, verifyDashboardPasscode } from "../services/api.js";
 import { DEMO_SERIES } from "../services/demoTelemetry.js";
+import SimulationPanel from "../Components/dashboard/SimulationPanel.jsx";
 
 const metricOptions = {
   sci: {
@@ -16,14 +17,14 @@ const metricOptions = {
     color: "#10b981",
     unit: "kgCO₂e",
     value: (day) => day.emissions,
-    format: (value) => value.toFixed(2),
+    format: (value) => value.toFixed(1),
   },
   intensity: {
     label: "Grid intensity",
     color: "#8b5cf6",
     unit: "gCO₂e / kWh",
     value: (day) => day.intensity,
-    format: (value) => value.toFixed(0),
+    format: (value) => value.toFixed(1),
   },
   energy: {
     label: "Energy",
@@ -38,18 +39,20 @@ function formatDay(date, options = { month: "short", day: "numeric" }) {
   return new Intl.DateTimeFormat("en", options).format(date);
 }
 
-function getWeeklyAverages(days) {
-  return Array.from({ length: Math.ceil(days.length / 7) }, (_, index) => {
+function getWeeklyPeriods(days) {
+  const weekCount = Math.min(4, Math.floor(days.length / 7));
+  return Array.from({ length: weekCount }, (_, index) => {
     const week = days.slice(index * 7, (index + 1) * 7);
     return {
       label: `Week ${index + 1}`,
       start: week[0].date,
       end: week[week.length - 1].date,
-      average: week.reduce((total, day) => total + day.sci, 0) / week.length,
-      lastDayIndex: index * 7 + week.length - 1,
+      days: week,
     };
   });
 }
+
+const weeklyPeriods = getWeeklyPeriods(DEMO_SERIES);
 
 function TimeSeriesChart({ days, metric, selectedIndex, onSelect }) {
   const width = 800;
@@ -69,14 +72,17 @@ function TimeSeriesChart({ days, metric, selectedIndex, onSelect }) {
   const area = `${plot.left},${height - plot.bottom} ${line} ${
     width - plot.right
   },${height - plot.bottom}`;
-  const labels = [0, 7, 14, 21, 29];
+  const labels =
+    days.length <= 7
+      ? [0, Math.floor((days.length - 1) / 2), days.length - 1]
+      : [0, 7, 14, 21, days.length - 1];
 
   return (
     <div className="workspace-series-chart">
       <svg
         viewBox={`0 0 ${width} ${height}`}
         role="img"
-        aria-label={`30-day ${metric.label.toLowerCase()} time series. Select a point to inspect a day.`}
+        aria-label={`${days.length}-day ${metric.label.toLowerCase()} time series. Select a point to inspect a day.`}
       >
         {[0, 0.5, 1].map((fraction) => {
           const y = plot.top + fraction * (height - plot.top - plot.bottom);
@@ -132,7 +138,7 @@ function TimeSeriesChart({ days, metric, selectedIndex, onSelect }) {
             }}
           />
         ))}
-        {labels.map((index) => (
+        {[...new Set(labels)].map((index) => (
           <text
             key={index}
             x={points[index].x}
@@ -158,16 +164,31 @@ export default function Dashboard() {
   const [error, setError] = useState("");
   const [unlocking, setUnlocking] = useState(false);
   const [chartMetric, setChartMetric] = useState("sci");
+  const [periodMode, setPeriodMode] = useState("monthly");
   const [selectedDayIndex, setSelectedDayIndex] = useState(29);
-  const [selectedWeekIndex, setSelectedWeekIndex] = useState(null);
+  const [selectedWeekIndex, setSelectedWeekIndex] = useState(
+    Math.max(0, weeklyPeriods.length - 1)
+  );
   const hasDemoData = String(dashboard?.dashboard_id ?? id) === "1";
   const demoDays = hasDemoData ? DEMO_SERIES : [];
-  const weeklyAverages = getWeeklyAverages(demoDays);
-  const selectedDay = demoDays[selectedDayIndex];
-  const totalEmissions = demoDays.reduce((total, day) => total + day.emissions, 0);
-  const averageIntensity =
-    demoDays.reduce((total, day) => total + day.intensity, 0) / demoDays.length;
-  const totalEnergy = demoDays.reduce((total, day) => total + day.energy, 0);
+  const selectedWeek = weeklyPeriods[selectedWeekIndex];
+  const periodDays =
+    periodMode === "weekly" ? selectedWeek?.days || [] : demoDays;
+  const selectedDay = periodDays[selectedDayIndex];
+  const periodAverage = (key) =>
+    periodDays.length > 0
+      ? periodDays.reduce((total, day) => total + day[key], 0) / periodDays.length
+      : 0;
+  const averageSci = periodAverage("sci");
+  const averageEmissions = periodAverage("emissions");
+  const averageIntensity = periodAverage("intensity");
+  const averageEnergy = periodAverage("energy");
+  const periodLabel =
+    periodMode === "weekly"
+      ? `${selectedWeek?.label || "selected week"} (${formatDay(
+          selectedWeek?.start || new Date()
+        )}–${formatDay(selectedWeek?.end || new Date())})`
+      : "30-day month";
   const activeMetric = metricOptions[chartMetric];
 
   useEffect(() => {
@@ -318,15 +339,6 @@ export default function Dashboard() {
                 >
                   Logbook
                 </button>
-                {!loading && hasDemoData && demoDays.length > 0 && (
-                  <button
-                    type="button"
-                    className="workspace-simulation-button"
-                    onClick={() => navigate(`/dashboard/${encodeURIComponent(id)}/simulation`)}
-                  >
-                    Simulate impact
-                  </button>
-                )}
                 <button
                   type="button"
                   className="workspace-settings-button"
@@ -360,37 +372,89 @@ export default function Dashboard() {
                 </div>
                 <div className="workspace-detail-grid workspace-analytics-summary">
               <article className="workspace-detail-card">
-                <span className="workspace-card-label">CURRENT SCI</span>
-                <strong className="workspace-detail-metric">
-                  {selectedDay.sci.toFixed(6)}
-                </strong>
-                <span className="workspace-card-caption">
-                  gCO₂e per API call · today
-                </span>
+                <span className="workspace-card-label">SCI</span>
+                <div className="workspace-summary-value">
+                  <strong className="workspace-detail-metric">{averageSci.toFixed(3)}</strong>
+                  <span className="workspace-summary-unit">gCO₂e / API call</span>
+                </div>
               </article>
               <article className="workspace-detail-card">
-                <span className="workspace-card-label">30-DAY EMISSIONS</span>
-                <strong className="workspace-detail-metric">{totalEmissions.toFixed(1)}</strong>
-                <span className="workspace-card-caption">kgCO₂e · energy × grid intensity</span>
+                <span className="workspace-card-label">Emissions</span>
+                <div className="workspace-summary-value">
+                  <strong className="workspace-detail-metric">{averageEmissions.toFixed(1)}</strong>
+                  <span className="workspace-summary-unit">kgCO₂e / day</span>
+                </div>
               </article>
               <article className="workspace-detail-card">
-                <span className="workspace-card-label">AVG. GRID INTENSITY</span>
-                <strong className="workspace-detail-metric">{averageIntensity.toFixed(0)}</strong>
-                <span className="workspace-card-caption">gCO₂e / kWh · 30-day average</span>
+                <span className="workspace-card-label">Grid intensity</span>
+                <div className="workspace-summary-value">
+                  <strong className="workspace-detail-metric">{averageIntensity.toFixed(1)}</strong>
+                  <span className="workspace-summary-unit">gCO₂e / kWh</span>
+                </div>
               </article>
               <article className="workspace-detail-card">
-                <span className="workspace-card-label">ENERGY CONSUMPTION</span>
-                <strong className="workspace-detail-metric">{totalEnergy.toFixed(1)}</strong>
-                <span className="workspace-card-caption">kWh · 30-day total</span>
+                <span className="workspace-card-label">Energy consumption</span>
+                <div className="workspace-summary-value">
+                  <strong className="workspace-detail-metric">{averageEnergy.toFixed(1)}</strong>
+                  <span className="workspace-summary-unit">kWh / day</span>
+                </div>
               </article>
             </div>
             <section className="workspace-analytics-panel">
               <div className="workspace-analytics-heading">
                 <div>
-                  <span className="workspace-card-label">30-DAY HISTORY</span>
-                  <h2>Impact over time</h2>
-                  <p>Select any point to inspect that day’s measurements.</p>
-                  <span className="workspace-chart-unit">{activeMetric.unit}</span>
+                  <div className="workspace-chart-tabs" role="tablist" aria-label="History period">
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={periodMode === "weekly"}
+                      className={periodMode === "weekly" ? "is-active" : ""}
+                      onClick={() => {
+                        setPeriodMode("weekly");
+                        setSelectedWeekIndex(weeklyPeriods.length - 1);
+                        setSelectedDayIndex(6);
+                      }}
+                    >
+                      Weekly
+                    </button>
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={periodMode === "monthly"}
+                      className={periodMode === "monthly" ? "is-active" : ""}
+                      onClick={() => {
+                        setPeriodMode("monthly");
+                        setSelectedDayIndex(demoDays.length - 1);
+                      }}
+                    >
+                      Monthly
+                    </button>
+                  </div>
+                  {periodMode === "weekly" ? (
+                    <label className="workspace-week-picker">
+                      <span className="sr-only">Choose a week</span>
+                      <select
+                        aria-label="Choose a week"
+                        value={selectedWeekIndex}
+                        onChange={(event) => {
+                          setSelectedWeekIndex(Number(event.target.value));
+                          setSelectedDayIndex(6);
+                        }}
+                      >
+                        {weeklyPeriods.map((week, index) => (
+                          <option key={week.label} value={index}>
+                            {week.label} · {formatDay(week.start)}–{formatDay(week.end)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ) : (
+                    <>
+                      <h2>Impact over time</h2>
+                      <p>Select any point to inspect that day’s measurements.</p>
+                      <span className="workspace-chart-unit">{activeMetric.unit}</span>
+                    </>
+                  )}
                 </div>
                 <div className="workspace-chart-tabs" role="tablist" aria-label="Chart metric">
                   {Object.entries(metricOptions).map(([key, metric]) => (
@@ -408,13 +472,10 @@ export default function Dashboard() {
                 </div>
               </div>
               <TimeSeriesChart
-                days={demoDays}
+                days={periodDays}
                 metric={activeMetric}
                 selectedIndex={selectedDayIndex}
-                onSelect={(index) => {
-                  setSelectedDayIndex(index);
-                  setSelectedWeekIndex(null);
-                }}
+                onSelect={setSelectedDayIndex}
               />
               <div className="workspace-selected-day">
                 <div>
@@ -429,58 +490,19 @@ export default function Dashboard() {
                   {selectedDay.sci.toFixed(6)}
                   <small>gCO₂e / API call</small>
                 </span>
-                <span>{selectedDay.emissions.toFixed(2)} kgCO₂e</span>
-                <span>{selectedDay.intensity.toFixed(0)} gCO₂e/kWh</span>
+                <span>{selectedDay.emissions.toFixed(1)} kgCO₂e</span>
+                <span>{selectedDay.intensity.toFixed(1)} gCO₂e/kWh</span>
                 <span>{selectedDay.energy.toFixed(1)} kWh</span>
                 <span>{selectedDay.apiCalls.toLocaleString()} API calls</span>
               </div>
             </section>
 
-            <section className="workspace-weekly-panel">
-              <div className="workspace-analytics-heading">
-                <div>
-                  <span className="workspace-card-label">WEEKLY SCI</span>
-                  <h2>Average SCI by week</h2>
-                  <p>Daily SCI averaged across each week in this 30-day period.</p>
-                </div>
-              </div>
-              <div className="workspace-weekly-bars">
-                {weeklyAverages.map((week, index) => {
-                  const highest = Math.max(...weeklyAverages.map((item) => item.average));
-                  const height = Math.max(12, (week.average / highest) * 100);
-                  return (
-                    <button
-                      key={week.label}
-                      type="button"
-                      className={`workspace-week-bar ${
-                        selectedWeekIndex === index ? "is-selected" : ""
-                      }`}
-                      onClick={() => {
-                        setSelectedWeekIndex(index);
-                        setSelectedDayIndex(week.lastDayIndex);
-                      }}
-                      aria-pressed={selectedWeekIndex === index}
-                      aria-label={`${week.label}, ${formatDay(week.start)} to ${formatDay(
-                        week.end
-                      )}, average SCI ${week.average.toFixed(6)} grams of carbon dioxide equivalent per API call`}
-                    >
-                      <span className="workspace-week-average">{week.average.toFixed(6)}</span>
-                      <span
-                        className="workspace-week-column"
-                        style={{ height: `${height}%` }}
-                      />
-                      <span className="workspace-week-label">{week.label}</span>
-                      <span className="workspace-week-dates">
-                        {formatDay(week.start)}–{formatDay(week.end)}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-              <p className="workspace-weekly-caption">
-                Weekly values are in gCO₂e per API call. Select a week to inspect its last day in the chart above.
-              </p>
-            </section>
+            <SimulationPanel
+              days={periodDays}
+              periodLabel={periodLabel}
+              selectedIndex={selectedDayIndex}
+              onSelect={setSelectedDayIndex}
+            />
 
             <details className="workspace-daily-details">
               <summary>View daily SCI for all 30 days</summary>
@@ -500,10 +522,14 @@ export default function Dashboard() {
                     {demoDays.map((day, index) => (
                       <tr
                         key={day.date.toISOString()}
-                        className={index === selectedDayIndex ? "is-selected" : ""}
+                        className={
+                          periodMode === "monthly" && index === selectedDayIndex
+                            ? "is-selected"
+                            : ""
+                        }
                         onClick={() => {
+                          setPeriodMode("monthly");
                           setSelectedDayIndex(index);
-                          setSelectedWeekIndex(null);
                         }}
                       >
                         <td>{formatDay(day.date, {
@@ -512,8 +538,8 @@ export default function Dashboard() {
                           year: "numeric",
                         })}</td>
                         <td>{day.sci.toFixed(6)}</td>
-                        <td>{day.emissions.toFixed(2)}</td>
-                        <td>{day.intensity.toFixed(0)}</td>
+                        <td>{day.emissions.toFixed(1)}</td>
+                        <td>{day.intensity.toFixed(1)}</td>
                         <td>{day.energy.toFixed(1)}</td>
                         <td>{day.apiCalls.toLocaleString()}</td>
                       </tr>
@@ -522,15 +548,6 @@ export default function Dashboard() {
                 </table>
               </div>
             </details>
-
-                <div className="workspace-data-source-footnote">
-              <span>
-                {dashboard.has_csv
-                  ? `Workspace file: ${dashboard.csv_filename || "CSV imported"}`
-                  : "Workspace data source: manual entry"}
-              </span>
-              <span>SCI = carbon emissions (gCO₂e) ÷ API calls</span>
-                </div>
               </>
             ) : (
               <section className="workspace-detail-empty">
