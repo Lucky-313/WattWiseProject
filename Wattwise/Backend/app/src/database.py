@@ -1,15 +1,35 @@
 from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, Date, ForeignKey, Float, Boolean, UniqueConstraint, inspect
 from sqlalchemy.orm import declarative_base, Session
 from datetime import datetime
+import os
 from pathlib import Path
 
-# Find the main WattWiseProject folder
 BASE_DIR = Path(__file__).resolve().parents[4]
-
-# Connect to the original SQLite database
 DATABASE_PATH = BASE_DIR / "wattwise.db"
 
-engine = create_engine(f"sqlite:///{DATABASE_PATH}")
+
+def get_database_url():
+    database_url = os.getenv("DATABASE_URL")
+    if database_url:
+        if database_url.startswith("postgres://"):
+            return database_url.replace(
+                "postgres://", "postgresql+psycopg://", 1
+            )
+        if database_url.startswith("postgresql://"):
+            return database_url.replace(
+                "postgresql://", "postgresql+psycopg://", 1
+            )
+        return database_url
+
+    if os.getenv("VERCEL_ENV") in {"production", "preview"}:
+        raise RuntimeError(
+            "Set DATABASE_URL in Vercel production and preview environments."
+        )
+
+    return f"sqlite:///{DATABASE_PATH}"
+
+
+engine = create_engine(get_database_url(), pool_pre_ping=True)
 
 # Base class for creating database tables
 Base = declarative_base()

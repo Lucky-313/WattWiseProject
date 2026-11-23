@@ -9,12 +9,14 @@ from pwdlib import PasswordHash
 # config password hashing
 password_hash = PasswordHash.recommended()
 
-# config JWT - hard coding the key for easier use
-#SECRET_KEY = os.getenv("SECRET_KEY") - proper setup for Secret key
-SECRET_KEY = "wattwise-development-secret-key"
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 if not SECRET_KEY:
-    raise RuntimeError("SECRET_KEY variable is not set")
+    if os.getenv("VERCEL_ENV") in {"production", "preview"}:
+        raise RuntimeError(
+            "Set SECRET_KEY in Vercel production and preview environments."
+        )
+    SECRET_KEY = "wattwise-development-secret-key"
 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30

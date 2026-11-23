@@ -5,3 +5,4 @@ SQLAlchemy
 PyJWT
 pwdlib[argon2]
 email-validator
+psycopg[binary]

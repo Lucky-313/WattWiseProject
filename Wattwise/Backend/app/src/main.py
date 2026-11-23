@@ -1,3 +1,12 @@
+from contextlib import asynccontextmanager
+import sys
+from pathlib import Path
+
+# Vercel loads this file by path, so make its sibling modules importable.
+backend_source = str(Path(__file__).resolve().parent)
+if backend_source not in sys.path:
+    sys.path.insert(0, backend_source)
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from Auth import router as auth_router
@@ -5,7 +14,14 @@ from Routers.dashboard_router import router as dashboard_router
 from Routers.sci_router import router as sci_router
 from database import initialize_database
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    initialize_database()
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 # Register Auth and Feature Routers
 app.include_router(auth_router)
@@ -13,10 +29,6 @@ app.include_router(auth_router, prefix="/api")
 app.include_router(dashboard_router)
 app.include_router(sci_router)
 
-
-@app.on_event("startup")
-def initialize_app_database():
-    initialize_database()
 
 # Cors configuration
 origins = [
