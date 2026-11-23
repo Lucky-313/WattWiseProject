@@ -108,6 +108,10 @@ function FileDropzone({ file, onFile, error }) {
       <span className="workspace-drop-help">
         CSV file · up to 5 MB {file ? `· ${(file.size / 1024).toFixed(0)} KB` : ""}
       </span>
+      <span className="workspace-drop-help">
+        Required: date, energy_kwh, functional_unit_count · Optional:
+        grid_intensity (gCO₂/kWh), carbon_emissions (gCO₂e) · 30 or 31 consecutive daily rows
+      </span>
       {error && <span className="workspace-field-error">{error}</span>}
     </label>
   );
@@ -503,6 +507,10 @@ export default function Home() {
       setSetupError(setupFileError);
       return;
     }
+    if (inputMethod === "csv" && !setupFile) {
+      setSetupError("Choose a CSV file before creating this dashboard.");
+      return;
+    }
 
     setSetupBusy(true);
     try {
@@ -512,7 +520,7 @@ export default function Home() {
         passcode: protectWithPasscode ? newPasscode : null,
         input_method: inputMethod,
       };
-      if (setupFile) {
+      if (inputMethod === "csv" && setupFile) {
         request.csv_filename = setupFile.name;
         request.csv_content = await setupFile.text();
       }
@@ -1058,7 +1066,9 @@ export default function Home() {
             <div className="workspace-settings-section">
               <h3>CSV data</h3>
               <p className="workspace-modal-description">
-                Import a new file to replace this dashboard’s current CSV.
+                {settingsDashboard.has_csv
+                  ? "Import a new file to replace this dashboard’s current CSV."
+                  : "Choose a CSV file, then select Save changes to import its measurements."}
               </p>
               <FileDropzone
                 file={settingsFile}

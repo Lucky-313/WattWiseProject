@@ -109,6 +109,13 @@ export function getDashboard(id) {
   });
 }
 
+export function getDashboardMeasurements(id) {
+  return requestApi(
+    `/api/dashboards/${encodeURIComponent(id)}/measurements`,
+    { headers: getDashboardAccessHeaders(id) }
+  );
+}
+
 function getDashboardAccessHeaders(id) {
   const headers = {};
   const dashboardToken = sessionStorage.getItem(
