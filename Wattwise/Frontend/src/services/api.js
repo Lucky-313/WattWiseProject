@@ -91,6 +91,10 @@ export function getTelemetry() {
   return requestApi("/api/telemetry");
 }
 
+export function getGenerationMix() {
+  return requestApi("/api/generation");
+}
+
 export function getDashboards() {
   return requestApi("/api/dashboards");
 }

@@ -880,7 +880,7 @@ button {
 }
 
 .workspace-topbar {
-  min-height: 84px;
+  min-height: 102px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -948,15 +948,23 @@ button {
 }
 
 .workspace-telemetry {
-  min-width: 240px;
+  position: relative;
+  z-index: 2;
+  min-width: 318px;
   display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 9px 12px;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 13px 15px;
   background: rgba(255, 255, 255, 0.88);
   border: 1px solid #e4edf4;
-  border-radius: 9px;
+  border-radius: 11px;
   box-shadow: 0 2px 6px rgba(15, 23, 42, 0.025);
+  cursor: help;
+}
+
+.workspace-telemetry:focus-visible {
+  outline: 2px solid #38bdf8;
+  outline-offset: 3px;
 }
 
 .workspace-telemetry-icon {
@@ -976,7 +984,7 @@ button {
 .workspace-telemetry-content {
   min-width: 0;
   display: grid;
-  gap: 6px;
+  gap: 8px;
 }
 
 .workspace-telemetry-label {
@@ -1009,29 +1017,110 @@ button {
 .workspace-telemetry-values {
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 20px;
 }
 
 .workspace-telemetry-values > span {
   display: inline-flex;
   align-items: baseline;
-  gap: 5px;
+  gap: 6px;
 }
 
 .workspace-telemetry-values strong {
   color: #1e293b;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .workspace-telemetry-values small {
   color: #94a3b8;
-  font-size: 8px;
+  font-size: 9px;
 }
 
-.workspace-telemetry-values > i {
-  width: 1px;
-  height: 14px;
-  background: #e2e8f0;
+.workspace-generation-hint {
+  color: #94a3b8;
+  font-size: 9px;
+}
+
+.workspace-generation-popover {
+  position: absolute;
+  top: calc(100% - 1px);
+  right: 0;
+  z-index: 20;
+  width: min(340px, calc(100vw - 36px));
+  padding: 15px;
+  color: #334155;
+  background: #fff;
+  border: 1px solid #dfe8f0;
+  border-radius: 12px;
+  box-shadow: 0 14px 36px rgba(15, 23, 42, 0.16);
+  cursor: default;
+}
+
+.workspace-generation-heading {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 13px;
+}
+
+.workspace-generation-heading strong,
+.workspace-generation-popover > strong {
+  color: #0f172a;
+  font-size: 12px;
+}
+
+.workspace-generation-heading span,
+.workspace-generation-popover > span {
+  color: #94a3b8;
+  font-size: 9px;
+}
+
+.workspace-generation-details {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.workspace-generation-pie {
+  width: 108px;
+  height: 108px;
+  flex: 0 0 108px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px #e2e8f0, 0 4px 12px rgba(15, 23, 42, 0.1);
+}
+
+.workspace-generation-legend {
+  min-width: 0;
+  max-height: 140px;
+  flex: 1;
+  display: grid;
+  gap: 5px;
+  overflow: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.workspace-generation-legend li {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  color: #64748b;
+  font-size: 10px;
+  text-transform: capitalize;
+}
+
+.workspace-generation-legend li i {
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+}
+
+.workspace-generation-legend li strong {
+  color: #334155;
+  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 9px;
 }
 
 .workspace-mono,
@@ -1121,6 +1210,66 @@ button {
   font-size: 9px;
   font-weight: 650;
   letter-spacing: 1px;
+}
+
+.workspace-theme-toggle {
+  min-height: 31px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 9px;
+  color: #475569;
+  background: #fff;
+  border: 1px solid #dbe5ee;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.workspace-theme-toggle:hover {
+  color: #0369a1;
+  background: #f0f9ff;
+  border-color: #bae6fd;
+}
+
+.workspace-theme-toggle:focus-visible {
+  outline: 2px solid #38bdf8;
+  outline-offset: 2px;
+}
+
+.workspace-theme-toggle svg {
+  width: 14px;
+  height: 14px;
+}
+
+.workspace-theme-track {
+  width: 27px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  background: #cbd5e1;
+  border-radius: 999px;
+  transition: background 150ms ease;
+}
+
+.workspace-theme-track > span {
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.2);
+  transition: transform 150ms ease;
+}
+
+.workspace-theme-toggle[aria-checked="true"] .workspace-theme-track {
+  background: #0284c7;
+}
+
+.workspace-theme-toggle[aria-checked="true"] .workspace-theme-track > span {
+  transform: translateX(11px);
 }
 
 .workspace-intro h1 {
@@ -2159,7 +2308,7 @@ button {
   }
 
   .workspace-topbar {
-    min-height: 74px;
+    min-height: 90px;
   }
 
   .workspace-topbar-right {
@@ -2200,6 +2349,11 @@ button {
   .workspace-telemetry {
     flex: 1;
     margin-right: 4px;
+  }
+
+  .workspace-telemetry-values {
+    flex-wrap: wrap;
+    gap: 6px 12px;
   }
 
   .workspace-logout {
@@ -2366,18 +2520,43 @@ button {
 
 .workspace-analytics-summary .workspace-detail-card {
   min-height: 124px;
-  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
   padding: 17px;
+  text-align: center;
+}
+
+.workspace-analytics-summary .workspace-card-label {
+  color: #475569;
+  font-size: 11px;
+  font-weight: 720;
+  letter-spacing: 0.25px;
+}
+
+.workspace-summary-value {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: baseline;
+  gap: 8px;
 }
 
 .workspace-analytics-summary .workspace-detail-metric {
   font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
-  font-size: clamp(18px, 2vw, 24px);
+  font-size: clamp(20px, 2.1vw, 26px);
   font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
 
-.workspace-analytics-panel,
-.workspace-weekly-panel {
+.workspace-summary-unit {
+  color: #64748b;
+  font-size: 9px;
+  font-weight: 500;
+}
+
+.workspace-analytics-panel {
   margin-top: 14px;
   padding: 22px;
   background: #fff;
@@ -2439,6 +2618,28 @@ button {
   color: #0369a1;
   background: #fff;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1);
+}
+
+.workspace-week-picker {
+  display: block;
+  margin-top: 9px;
+}
+
+.workspace-week-picker select {
+  min-width: 190px;
+  min-height: 32px;
+  padding: 0 10px;
+  color: #334155;
+  background: #fff;
+  border: 1px solid #dbe5ee;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.workspace-week-picker select:focus-visible {
+  outline: 2px solid #7dd3fc;
+  outline-offset: 1px;
 }
 
 .workspace-series-chart {
@@ -2516,74 +2717,6 @@ button {
   font-weight: 400;
 }
 
-.workspace-weekly-bars {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  align-items: end;
-  gap: 12px;
-  min-height: 190px;
-  margin-top: 18px;
-}
-
-.workspace-week-bar {
-  min-width: 0;
-  height: 190px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 6px;
-  padding: 5px;
-  color: #64748b;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  cursor: pointer;
-}
-
-.workspace-week-bar:hover,
-.workspace-week-bar.is-selected {
-  background: #f8fafc;
-  border-color: #e0f2fe;
-}
-
-.workspace-week-average {
-  color: #334155;
-  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
-  font-size: 9px;
-  font-variant-numeric: tabular-nums;
-}
-
-.workspace-week-column {
-  width: min(100%, 78px);
-  min-height: 12px;
-  background: linear-gradient(180deg, #38bdf8, #0284c7);
-  border-radius: 5px 5px 2px 2px;
-  transition: height 180ms ease, filter 180ms ease;
-}
-
-.workspace-week-bar.is-selected .workspace-week-column,
-.workspace-week-bar:hover .workspace-week-column {
-  filter: saturate(1.25);
-}
-
-.workspace-week-label {
-  color: #334155;
-  font-size: 10px;
-  font-weight: 600;
-}
-
-.workspace-week-dates {
-  font-size: 8px;
-}
-
-.workspace-weekly-caption {
-  margin: 10px 0 0;
-  color: #94a3b8;
-  font-size: 9px;
-  line-height: 1.5;
-}
-
 .workspace-daily-details {
   margin-top: 14px;
   padding: 16px 18px;
@@ -2636,16 +2769,6 @@ button {
 .workspace-daily-table tbody tr:hover,
 .workspace-daily-table tbody tr.is-selected {
   background: #f0f9ff;
-}
-
-.workspace-data-source-footnote {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 8px 18px;
-  margin-top: 13px;
-  color: #94a3b8;
-  font-size: 9px;
 }
 
 .workspace-simulation-button {
@@ -2820,6 +2943,50 @@ button {
 
 .workspace-simulation-selected {
   margin-top: 12px;
+}
+
+.workspace-selected-day.workspace-simulation-selected {
+  align-items: center;
+}
+
+.workspace-selected-day.workspace-simulation-selected > .workspace-simulation-comparison {
+  display: flex;
+  flex: 1 1 320px;
+  align-items: center;
+  justify-content: flex-start;
+  gap: clamp(20px, 4vw, 48px);
+  margin-right: 0;
+}
+
+.workspace-simulation-comparison-value {
+  display: grid;
+  gap: 4px;
+  min-width: 100px;
+  text-align: left;
+}
+
+.workspace-simulation-comparison-value > span {
+  color: #64748b;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 9px;
+  font-weight: 650;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.workspace-simulation-comparison-value > strong {
+  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.workspace-simulation-original > strong {
+  color: #0f172a;
+  font-size: clamp(18px, 2.1vw, 22px);
+}
+
+.workspace-simulation-scenario > strong {
+  color: #0369a1;
+  font-size: 16px;
 }
 
 .workspace-simulation-empty {
@@ -4047,8 +4214,7 @@ button {
     min-height: 42px;
   }
 
-  .workspace-analytics-panel,
-  .workspace-weekly-panel {
+  .workspace-analytics-panel {
     padding: 16px 12px;
   }
 
@@ -4073,22 +4239,6 @@ button {
 
   .workspace-selected-day > div {
     flex: 1 1 100%;
-  }
-
-  .workspace-weekly-bars {
-    gap: 4px;
-  }
-
-  .workspace-week-bar {
-    padding: 4px 1px;
-  }
-
-  .workspace-week-average {
-    font-size: 7px;
-  }
-
-  .workspace-week-dates {
-    font-size: 7px;
   }
 
   .workspace-daily-details {
@@ -4192,5 +4342,332 @@ button {
     margin-bottom: 16px;
 }
 
+html[data-theme="dark"] {
+  color-scheme: dark;
+  color: #e2e8f0;
+  background: #0b1220;
+}
 
+html[data-theme="dark"] body {
+  color: #e2e8f0;
+  background: #0b1220;
+}
+
+html[data-theme="dark"] .workspace-page {
+  color: #e2e8f0;
+  background:
+    radial-gradient(ellipse at 86% 0%, rgba(14, 116, 144, 0.14), transparent 30%),
+    #0b1220;
+}
+
+html[data-theme="dark"] .workspace-preview-notice {
+  background: #172435;
+  border-color: #2b3b50;
+}
+
+html[data-theme="dark"] .workspace-preview-notice > span {
+  background: #131e2d;
+  border-color: #2b3b50;
+}
+
+html[data-theme="dark"] .workspace-topbar,
+html[data-theme="dark"] .workspace-footer {
+  border-color: #263447;
+}
+
+html[data-theme="dark"] .workspace-brand,
+html[data-theme="dark"] .workspace-intro h1,
+html[data-theme="dark"] .workspace-count-number,
+html[data-theme="dark"] .workspace-list-heading h2,
+html[data-theme="dark"] .workspace-dashboard-title-row h3,
+html[data-theme="dark"] .workspace-dashboard-bar.empty strong,
+html[data-theme="dark"] .workspace-telemetry-values strong,
+html[data-theme="dark"] .workspace-generation-heading strong,
+html[data-theme="dark"] .workspace-generation-popover > strong,
+html[data-theme="dark"] .workspace-detail-heading h1,
+html[data-theme="dark"] .workspace-detail-metric,
+html[data-theme="dark"] .workspace-detail-empty h2,
+html[data-theme="dark"] .workspace-unlock-panel h1,
+html[data-theme="dark"] .workspace-detail-error h1,
+html[data-theme="dark"] .workspace-logbook-heading h1,
+html[data-theme="dark"] .workspace-report-heading h1,
+html[data-theme="dark"] .workspace-logbook-card-name,
+html[data-theme="dark"] .workspace-report-section-heading h2,
+html[data-theme="dark"] .workspace-active-limit-title span,
+html[data-theme="dark"] .workspace-report-rule strong,
+html[data-theme="dark"] .workspace-breach-copy strong,
+html[data-theme="dark"] .workspace-report-empty strong,
+html[data-theme="dark"] .workspace-report-detail-grid dd,
+html[data-theme="dark"] .workspace-analytics-heading h2,
+html[data-theme="dark"] .workspace-selected-day strong,
+html[data-theme="dark"] .workspace-daily-details summary,
+html[data-theme="dark"] .workspace-simulation-field > span,
+html[data-theme="dark"] .workspace-settings-section h3,
+html[data-theme="dark"] .workspace-add-limit-form > div strong,
+html[data-theme="dark"] .workspace-report-breach-item strong {
+  color: #e2e8f0;
+}
+
+html[data-theme="dark"] .workspace-header-label,
+html[data-theme="dark"] .workspace-intro p,
+html[data-theme="dark"] .workspace-count,
+html[data-theme="dark"] .workspace-list-heading p,
+html[data-theme="dark"] .workspace-dashboard-meta,
+html[data-theme="dark"] .workspace-sci,
+html[data-theme="dark"] .workspace-telemetry-label,
+html[data-theme="dark"] .workspace-generation-legend li,
+html[data-theme="dark"] .workspace-preview-notice,
+html[data-theme="dark"] .workspace-preview-notice > span,
+html[data-theme="dark"] .workspace-loading,
+html[data-theme="dark"] .workspace-detail-state,
+html[data-theme="dark"] .workspace-footer-brand,
+html[data-theme="dark"] .workspace-footer > span,
+html[data-theme="dark"] .workspace-detail-heading p,
+html[data-theme="dark"] .workspace-detail-empty p,
+html[data-theme="dark"] .workspace-unlock-panel > p,
+html[data-theme="dark"] .workspace-detail-error p,
+html[data-theme="dark"] .workspace-card-caption,
+html[data-theme="dark"] .workspace-logbook-heading p,
+html[data-theme="dark"] .workspace-report-heading p,
+html[data-theme="dark"] .workspace-logbook-card-description,
+html[data-theme="dark"] .workspace-logbook-card-footer,
+html[data-theme="dark"] .workspace-report-section-heading p,
+html[data-theme="dark"] .workspace-report-limit-form > label,
+html[data-theme="dark"] .workspace-active-limit-unit,
+html[data-theme="dark"] .workspace-add-limit-label,
+html[data-theme="dark"] .workspace-add-limit-form > div span,
+html[data-theme="dark"] .workspace-report-no-data,
+html[data-theme="dark"] .workspace-report-rule,
+html[data-theme="dark"] .workspace-breach-card,
+html[data-theme="dark"] .workspace-breach-copy small,
+html[data-theme="dark"] .workspace-breach-observed small,
+html[data-theme="dark"] .workspace-report-empty,
+html[data-theme="dark"] .workspace-report-empty p,
+html[data-theme="dark"] .workspace-report-date,
+html[data-theme="dark"] .workspace-report-breach-summary span,
+html[data-theme="dark"] .workspace-report-breach-item > span,
+html[data-theme="dark"] .workspace-analytics-note,
+html[data-theme="dark"] .workspace-analytics-heading p,
+html[data-theme="dark"] .workspace-selected-day,
+html[data-theme="dark"] .workspace-selected-sci small,
+html[data-theme="dark"] .workspace-daily-table td,
+html[data-theme="dark"] .workspace-simulation-notice,
+html[data-theme="dark"] .workspace-simulation-score > span:not(.workspace-card-label),
+html[data-theme="dark"] .workspace-simulation-legend,
+html[data-theme="dark"] .workspace-field-label,
+html[data-theme="dark"] .workspace-method-card > span:nth-child(2),
+html[data-theme="dark"] .workspace-drop-help,
+html[data-theme="dark"] .workspace-modal-description,
+html[data-theme="dark"] .workspace-check-row,
+html[data-theme="dark"] .workspace-add-limit-cancel {
+  color: #9aabc0;
+}
+
+html[data-theme="dark"] .workspace-list-cap,
+html[data-theme="dark"] .workspace-lock-badge,
+html[data-theme="dark"] .workspace-chart-tabs,
+html[data-theme="dark"] .workspace-active-limit,
+html[data-theme="dark"] .workspace-report-no-data,
+html[data-theme="dark"] .workspace-report-rule,
+html[data-theme="dark"] .workspace-report-empty,
+html[data-theme="dark"] .workspace-selected-day,
+html[data-theme="dark"] .workspace-add-limit-form {
+  background: #172435;
+  border-color: #2b3b50;
+}
+
+html[data-theme="dark"] .workspace-telemetry,
+html[data-theme="dark"] .workspace-generation-popover,
+html[data-theme="dark"] .workspace-list-section,
+html[data-theme="dark"] .workspace-dashboard-bar.configured,
+html[data-theme="dark"] .workspace-detail-card,
+html[data-theme="dark"] .workspace-detail-empty,
+html[data-theme="dark"] .workspace-unlock-panel,
+html[data-theme="dark"] .workspace-logbook-card,
+html[data-theme="dark"] .workspace-report-limit-card,
+html[data-theme="dark"] .workspace-report-rules,
+html[data-theme="dark"] .workspace-report-list-section,
+html[data-theme="dark"] .workspace-analytics-panel,
+html[data-theme="dark"] .workspace-daily-details,
+html[data-theme="dark"] .workspace-simulation-field,
+html[data-theme="dark"] .workspace-modal,
+html[data-theme="dark"] .workspace-method-card,
+html[data-theme="dark"] .workspace-report-detail-grid > div,
+html[data-theme="dark"] .workspace-report-close,
+html[data-theme="dark"] .workspace-active-limit > input,
+html[data-theme="dark"] .workspace-add-limit-form > input,
+html[data-theme="dark"] .workspace-report-limit-form select,
+html[data-theme="dark"] .workspace-week-picker select {
+  color: #e2e8f0;
+  background: #131e2d;
+  border-color: #2b3b50;
+}
+
+html[data-theme="dark"] .workspace-dashboard-bar.empty {
+  color: #a7b6c8;
+  background: transparent;
+  border-color: #3a4b60;
+}
+
+html[data-theme="dark"] .workspace-dashboard-bar.empty:hover,
+html[data-theme="dark"] .workspace-dashboard-bar.empty:focus-visible,
+html[data-theme="dark"] .workspace-settings-button:hover,
+html[data-theme="dark"] .workspace-settings-button:focus-visible,
+html[data-theme="dark"] .workspace-method-card:hover,
+html[data-theme="dark"] .workspace-method-card.selected,
+html[data-theme="dark"] .workspace-report-rule:hover,
+html[data-theme="dark"] .workspace-report-rule.is-active,
+html[data-theme="dark"] .workspace-daily-table tbody tr:hover,
+html[data-theme="dark"] .workspace-daily-table tbody tr.is-selected {
+  background: #1a3043;
+  border-color: #256184;
+}
+
+html[data-theme="dark"] .workspace-dashboard-bar.configured:hover,
+html[data-theme="dark"] .workspace-dashboard-bar.configured:focus-visible,
+html[data-theme="dark"] .workspace-logbook-card:hover,
+html[data-theme="dark"] .workspace-logbook-card.is-highlighted {
+  border-color: #256184;
+}
+
+html[data-theme="dark"] .workspace-theme-toggle,
+html[data-theme="dark"] .workspace-preview-login,
+html[data-theme="dark"] .workspace-logout,
+html[data-theme="dark"] .workspace-modal-close,
+html[data-theme="dark"] .workspace-cancel-button,
+html[data-theme="dark"] .workspace-secondary-button,
+html[data-theme="dark"] .workspace-delete-button,
+html[data-theme="dark"] .workspace-active-limit-save,
+html[data-theme="dark"] .workspace-active-limit-remove,
+html[data-theme="dark"] .workspace-clear-all-limits,
+html[data-theme="dark"] .workspace-add-limit-chip,
+html[data-theme="dark"] .workspace-report-close {
+  background: #172435;
+  border-color: #34465c;
+}
+
+html[data-theme="dark"] .workspace-theme-toggle {
+  color: #cbd5e1;
+}
+
+html[data-theme="dark"] .workspace-theme-toggle:hover {
+  color: #7dd3fc;
+  background: #1a3043;
+  border-color: #256184;
+}
+
+html[data-theme="dark"] .workspace-theme-track {
+  background: #475569;
+}
+
+html[data-theme="dark"] .workspace-theme-toggle[aria-checked="true"] .workspace-theme-track {
+  background: #0284c7;
+}
+
+html[data-theme="dark"] .workspace-dashboard-bar.empty .workspace-empty-plus,
+html[data-theme="dark"] .workspace-empty-plus,
+html[data-theme="dark"] .workspace-telemetry-icon,
+html[data-theme="dark"] .workspace-logbook-icon,
+html[data-theme="dark"] .workspace-detail-chart-icon,
+html[data-theme="dark"] .workspace-lock-symbol {
+  color: #7dd3fc;
+  background: #163047;
+  border-color: #254962;
+}
+
+html[data-theme="dark"] .workspace-segmented,
+html[data-theme="dark"] .workspace-segmented > div,
+html[data-theme="dark"] .workspace-report-limit-input,
+html[data-theme="dark"] .workspace-input,
+html[data-theme="dark"] .workspace-simulation-field input,
+html[data-theme="dark"] .workspace-report-limit-input input,
+html[data-theme="dark"] .workspace-active-limit > input,
+html[data-theme="dark"] .workspace-add-limit-form > input {
+  color: #e2e8f0;
+  background: #0f1927;
+  border-color: #34465c;
+}
+
+html[data-theme="dark"] .workspace-input::placeholder,
+html[data-theme="dark"] .workspace-generation-hint,
+html[data-theme="dark"] .workspace-generation-heading span,
+html[data-theme="dark"] .workspace-generation-popover > span,
+html[data-theme="dark"] .workspace-telemetry-values small,
+html[data-theme="dark"] .workspace-dashboard-bar.empty small,
+html[data-theme="dark"] .workspace-empty-arrow,
+html[data-theme="dark"] .workspace-list-note,
+html[data-theme="dark"] .workspace-card-label,
+html[data-theme="dark"] .workspace-report-breach-summary small,
+html[data-theme="dark"] .workspace-report-breach-item small,
+html[data-theme="dark"] .workspace-report-detail-grid dt,
+html[data-theme="dark"] .workspace-simulation-score > small,
+html[data-theme="dark"] .workspace-simulation-field > small {
+  color: #8193a9;
+}
+
+html[data-theme="dark"] .workspace-segmented button,
+html[data-theme="dark"] .workspace-cancel-button,
+html[data-theme="dark"] .workspace-secondary-button,
+html[data-theme="dark"] .workspace-report-close,
+html[data-theme="dark"] .workspace-add-limit-chip {
+  color: #cbd5e1;
+}
+
+html[data-theme="dark"] .workspace-segmented button.selected,
+html[data-theme="dark"] .workspace-chart-tabs button.is-active {
+  color: #7dd3fc;
+  background: #1a3043;
+}
+
+html[data-theme="dark"] .workspace-method-icon,
+html[data-theme="dark"] .workspace-dropzone,
+html[data-theme="dark"] .workspace-simulation-score,
+html[data-theme="dark"] .workspace-report-limit-input,
+html[data-theme="dark"] .workspace-report-breach-summary,
+html[data-theme="dark"] .workspace-report-notice {
+  background: #172435;
+  border-color: #2b3b50;
+}
+
+html[data-theme="dark"] .workspace-method-card strong,
+html[data-theme="dark"] .workspace-drop-title,
+html[data-theme="dark"] .workspace-report-limit-input input,
+html[data-theme="dark"] .workspace-active-limit-title span,
+html[data-theme="dark"] .workspace-report-detail-grid dd {
+  color: #e2e8f0;
+}
+
+html[data-theme="dark"] .workspace-daily-table th,
+html[data-theme="dark"] .workspace-daily-table td,
+html[data-theme="dark"] .workspace-meta-divider,
+html[data-theme="dark"] .workspace-modal-section,
+html[data-theme="dark"] .workspace-settings-section,
+html[data-theme="dark"] .workspace-add-limit-section {
+  border-color: #2b3b50;
+}
+
+html[data-theme="dark"] .workspace-chart-gridline {
+  stroke: #2b3b50;
+}
+
+html[data-theme="dark"] .workspace-chart-axis {
+  fill: #8193a9;
+}
+
+html[data-theme="dark"] .workspace-report-detail-grid {
+  background: #2b3b50;
+  border-color: #2b3b50;
+}
+
+html[data-theme="dark"] .workspace-analytics-summary .workspace-card-label {
+  color: #cbd5e1;
+}
+
+html[data-theme="dark"] .workspace-summary-unit {
+  color: #9aabc0;
+}
+
+html[data-theme="dark"] .workspace-simulation-comparison-value > span {
+  color: #9aabc0;
+}
 

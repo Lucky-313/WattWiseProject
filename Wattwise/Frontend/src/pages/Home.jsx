@@ -5,12 +5,14 @@ import {
   createDashboard,
   deleteDashboard,
   getDashboards,
+  getGenerationMix,
   getTelemetry,
   updateDashboardSettings,
   uploadDashboardCsv,
   verifyDashboardPasscode,
 } from "../services/api.js";
 import { DEMO_SERIES } from "../services/demoTelemetry.js";
+import { applyTheme, getTheme } from "../services/theme.js";
 
 const MAX_DASHBOARDS = 3;
 
@@ -210,14 +212,92 @@ function DashboardBar({ dashboard, onOpen, onSettings }) {
   );
 }
 
+const GENERATION_COLORS = {
+  biomass: "#84cc16",
+  coal: "#64748b",
+  gas: "#f97316",
+  hydro: "#06b6d4",
+  imports: "#a78bfa",
+  nuclear: "#eab308",
+  other: "#94a3b8",
+  solar: "#facc15",
+  wind: "#14b8a6",
+};
+
+function GridGenerationPopover({ generation, error }) {
+  if (error) {
+    return (
+      <div className="workspace-generation-popover" role="status">
+        <strong>Generation mix unavailable</strong>
+        <span>{error}</span>
+      </div>
+    );
+  }
+  if (!generation?.generation_mix?.length) {
+    return (
+      <div className="workspace-generation-popover" role="status">
+        <strong>Waiting for live generation data…</strong>
+      </div>
+    );
+  }
+
+  const total = generation.generation_mix.reduce(
+    (sum, item) => sum + item.percentage,
+    0
+  );
+  let runningTotal = 0;
+  const segments = generation.generation_mix.map((item, index) => {
+    const start = runningTotal;
+    runningTotal += total > 0 ? (item.percentage / total) * 100 : 0;
+    const color =
+      GENERATION_COLORS[item.fuel.toLowerCase()] ||
+      `hsl(${(index * 53 + 190) % 360} 62% 55%)`;
+    return { ...item, color, start, end: runningTotal };
+  });
+  const pieBackground = `conic-gradient(${segments
+    .map(({ color, start, end }) => `${color} ${start}% ${end}%`)
+    .join(", ")})`;
+
+  return (
+    <div className="workspace-generation-popover">
+      <div className="workspace-generation-heading">
+        <strong>GB generation mix</strong>
+        <span>Live · UK Carbon Intensity API</span>
+      </div>
+      <div className="workspace-generation-details">
+        <div
+          className="workspace-generation-pie"
+          style={{ background: pieBackground }}
+          role="img"
+          aria-label="Pie chart of live GB electricity generation by fuel"
+        />
+        <ul className="workspace-generation-legend">
+          {segments.map((item) => (
+            <li key={item.fuel}>
+              <i style={{ backgroundColor: item.color }} aria-hidden="true" />
+              <span>{item.fuel}</span>
+              <strong>{item.percentage.toFixed(1)}%</strong>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isGuestPreview = searchParams.get("preview") === "1";
   const openedSettingsFor = useRef("");
   const [dashboards, setDashboards] = useState([]);
+  const [theme, setTheme] = useState(getTheme);
   const [emptySlots, setEmptySlots] = useState(1);
   const [telemetry, setTelemetry] = useState(null);
+  const [generation, setGeneration] = useState(null);
+  const [generationError, setGenerationError] = useState("");
+  const [generationPopoverOpen, setGenerationPopoverOpen] = useState(false);
+  const generationPopoverTimer = useRef(null);
   const [loading, setLoading] = useState(true);
   const [pageError, setPageError] = useState("");
 
@@ -254,11 +334,19 @@ export default function Home() {
     [emptySlots]
   );
 
+  function toggleTheme() {
+    const nextTheme = theme === "dark" ? "light" : "dark";
+    applyTheme(nextTheme);
+    setTheme(nextTheme);
+  }
+
   useEffect(() => {
     if (isGuestPreview) {
       setDashboards([]);
       setEmptySlots(1);
       setTelemetry(null);
+      setGeneration(null);
+      setGenerationError("");
       setPageError("");
       setLoading(false);
       return undefined;
@@ -271,6 +359,22 @@ export default function Home() {
 
     let active = true;
     setLoading(true);
+    getGenerationMix()
+      .then((currentGeneration) => {
+        if (!active) return;
+        setGeneration(currentGeneration);
+        setGenerationError("");
+      })
+      .catch((error) => {
+        if (!active) return;
+        if (!sessionStorage.getItem(ACCESS_TOKEN_KEY)) {
+          navigate("/", { replace: true });
+          return;
+        }
+        setGeneration(null);
+        setGenerationError(error.message);
+      });
+
     Promise.all([getDashboards(), getTelemetry()])
       .then(([savedDashboards, currentTelemetry]) => {
         if (!active) return;
@@ -293,8 +397,27 @@ export default function Home() {
 
     return () => {
       active = false;
+      if (generationPopoverTimer.current) {
+        window.clearTimeout(generationPopoverTimer.current);
+      }
     };
   }, [isGuestPreview, navigate]);
+
+  function showGenerationPopover() {
+    if (generationPopoverOpen || generationPopoverTimer.current) return;
+    generationPopoverTimer.current = window.setTimeout(() => {
+      setGenerationPopoverOpen(true);
+      generationPopoverTimer.current = null;
+    }, 1400);
+  }
+
+  function hideGenerationPopover() {
+    if (generationPopoverTimer.current) {
+      window.clearTimeout(generationPopoverTimer.current);
+      generationPopoverTimer.current = null;
+    }
+    setGenerationPopoverOpen(false);
+  }
 
   useEffect(() => {
     if (!modalOpen) return undefined;
@@ -520,7 +643,7 @@ export default function Home() {
     }
   }
 
-  const dashboardCount = dashboards.length + emptySlots;
+  const occupiedSlotCount = dashboards.length + emptySlots;
 
   return (
     <main className="workspace-page">
@@ -535,7 +658,16 @@ export default function Home() {
             <span className="workspace-header-label">Workspace</span>
           </div>
           <div className="workspace-topbar-right">
-            <section className="workspace-telemetry" aria-label="Live grid telemetry">
+            <section
+              className="workspace-telemetry"
+              aria-label="Live grid telemetry"
+              aria-expanded={generationPopoverOpen}
+              tabIndex={0}
+              onMouseEnter={showGenerationPopover}
+              onMouseLeave={hideGenerationPopover}
+              onFocus={showGenerationPopover}
+              onBlur={hideGenerationPopover}
+            >
               <div className="workspace-telemetry-icon" aria-hidden="true">↗</div>
               <div className="workspace-telemetry-content">
                 <div className="workspace-telemetry-label">
@@ -551,17 +683,25 @@ export default function Home() {
                     </strong>
                     <small>gCO₂/kWh</small>
                   </span>
-                  <i />
                   <span>
                     <strong className="workspace-mono">
-                      {telemetry?.ambient_temperature_c == null
-                        ? "N/A"
-                        : `${Number(telemetry.ambient_temperature_c).toFixed(1)}°`}
+                      {generation
+                        ? `${Number(generation.low_carbon_percentage).toFixed(0)}%`
+                        : "—"}
                     </strong>
-                    <small>ambient</small>
+                    <small>clean / low-carbon</small>
                   </span>
                 </div>
+                <small className="workspace-generation-hint">
+                  Hover or focus for generation mix
+                </small>
               </div>
+              {generationPopoverOpen && (
+                <GridGenerationPopover
+                  generation={generation}
+                  error={generationError}
+                />
+              )}
             </section>
             {isGuestPreview ? (
               <button
@@ -597,7 +737,27 @@ export default function Home() {
 
         <section className="workspace-intro">
           <div>
-            <span className="workspace-eyebrow">YOUR ENGINEERING, IN BALANCE</span>
+            <button
+              type="button"
+              className="workspace-theme-toggle"
+              role="switch"
+              aria-checked={theme === "dark"}
+              aria-label="Dark mode"
+              onClick={toggleTheme}
+            >
+              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path
+                  d="M16.2 12.9A7 7 0 0 1 7.1 3.8 7.1 7.1 0 1 0 16.2 12.9Z"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <span>Dark mode</span>
+              <span className="workspace-theme-track" aria-hidden="true">
+                <span />
+              </span>
+            </button>
             <h1>Your workspaces</h1>
             <p>
               A clearer picture of the energy behind your software.
@@ -632,7 +792,7 @@ export default function Home() {
               <p>Open a workspace or configure a new one.</p>
             </div>
             <span className="workspace-list-cap">
-              {dashboardCount} / {MAX_DASHBOARDS} SLOTS
+              {dashboards.length} / {MAX_DASHBOARDS} DASHBOARDS
             </span>
           </div>
 
@@ -679,7 +839,7 @@ export default function Home() {
             </div>
           )}
 
-          {dashboardCount < MAX_DASHBOARDS && (
+          {occupiedSlotCount < MAX_DASHBOARDS && (
             <button
               type="button"
               className={`workspace-add-button${isGuestPreview ? " is-preview" : ""}`}

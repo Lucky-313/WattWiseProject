@@ -473,6 +473,31 @@ def read_telemetry(_: int = Depends(authenticated_user_id)) -> dict[str, object]
     }
 
 
+@router.get("/generation")
+def read_generation_mix(_: int = Depends(authenticated_user_id)) -> dict[str, object]:
+    try:
+        generation_mix = ExternalGridAdapter().fetch_live_generation_mix()
+    except (OSError, TimeoutError, ValueError, KeyError, TypeError) as error:
+        raise HTTPException(
+            status_code=502,
+            detail="Unable to fetch live grid generation data.",
+        ) from error
+
+    low_carbon_fuels = {"biomass", "hydro", "nuclear", "solar", "wind"}
+    low_carbon_percentage = sum(
+        item["percentage"]
+        for item in generation_mix
+        if item["fuel"].lower() in low_carbon_fuels
+    )
+    return {
+        "region": "GB",
+        "generation_mix": generation_mix,
+        "low_carbon_percentage": low_carbon_percentage,
+        "source": "UK Carbon Intensity API",
+        "fetched_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+
 @router.get("/dashboards")
 def list_dashboards(
     owner_id: int = Depends(authenticated_user_id),
