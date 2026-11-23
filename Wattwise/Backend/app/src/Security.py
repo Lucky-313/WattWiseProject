@@ -78,3 +78,38 @@ def verify_access_token(token: str):
 
     except (jwt.InvalidTokenError, ValueError, TypeError):
         return None
+
+
+
+#Generate a password reset token
+def create_password_reset_token(user_id: int):
+
+    expire = datetime.now(timezone.utc) + timedelta(minutes=30)
+
+    payload = {
+        "sub": str(user_id),
+        "purpose": "password_reset",
+        "exp": expire
+    }
+
+    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
+
+#verify a password reset token
+def verify_password_reset_token(token: str):
+
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+
+        if payload.get("purpose") != "password_reset":
+            return None
+
+        user_id = payload.get("sub")
+
+        if user_id is None:
+            return None
+
+        return int(user_id)
+
+    except(jwt.InvalidTokenError, ValueError, TypeError):
+        return None

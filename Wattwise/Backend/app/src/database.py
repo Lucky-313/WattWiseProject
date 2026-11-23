@@ -269,6 +269,22 @@ def get_user_by_id(user_id):
 
         return session.query(User).filter(User.user_id == user_id).first()
 
+# update user password
+def update_user_password(user_id: int, new_password_hash: str):
+
+    with Session(engine) as session:
+
+        user = session.query(User).filter(User.user_id == user_id).first()
+
+        if not user:
+            return False
+
+        user.password_hash = new_password_hash
+        session.commit()
+
+        return True
+
+
 
 def initialize_database():
     Base.metadata.create_all(engine)
