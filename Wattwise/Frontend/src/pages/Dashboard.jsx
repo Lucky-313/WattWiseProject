@@ -1,6 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ACCESS_TOKEN_KEY, getDashboard, verifyDashboardPasscode } from "../services/api.js";
+import {
+  ACCESS_TOKEN_KEY,
+  getDashboard,
+  getDashboardMeasurements,
+  verifyDashboardPasscode,
+} from "../services/api.js";
 import { DEMO_SERIES } from "../services/demoTelemetry.js";
 import SimulationPanel from "../Components/dashboard/SimulationPanel.jsx";
 
@@ -35,24 +40,45 @@ const metricOptions = {
   },
 };
 
+const FUNCTIONAL_UNIT_TYPES = [
+  { value: "api_calls", label: "API Calls", singular: "API Call" },
+  { value: "active_users", label: "Active Users", singular: "Active User" },
+  { value: "transactions", label: "Transactions", singular: "Transaction" },
+  { value: "requests", label: "Requests", singular: "Request" },
+];
+
 function formatDay(date, options = { month: "short", day: "numeric" }) {
   return new Intl.DateTimeFormat("en", options).format(date);
 }
 
-function getWeeklyPeriods(days) {
-  const weekCount = Math.min(4, Math.floor(days.length / 7));
+function parseLocalDate(dateText) {
+  const [year, month, day] = dateText.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function getWeeklyPeriods(days, includePartialWeek = false) {
+  const weekCount = includePartialWeek
+    ? Math.ceil(days.length / 7)
+    : Math.min(4, Math.floor(days.length / 7));
   return Array.from({ length: weekCount }, (_, index) => {
-    const week = days.slice(index * 7, (index + 1) * 7);
+    const startIndex = index * 7;
+    const week = days.slice(startIndex, startIndex + 7);
     return {
       label: `Week ${index + 1}`,
       start: week[0].date,
       end: week[week.length - 1].date,
+      startIndex,
       days: week,
     };
   });
 }
 
-const weeklyPeriods = getWeeklyPeriods(DEMO_SERIES);
+function formatFunctionalUnitCount(value) {
+  return new Intl.NumberFormat("en", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }).format(value);
+}
 
 function TimeSeriesChart({ days, metric, selectedIndex, onSelect }) {
   const width = 800;
@@ -159,6 +185,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [measurementsLoading, setMeasurementsLoading] = useState(false);
   const [needsUnlock, setNeedsUnlock] = useState(false);
   const [passcode, setPasscode] = useState("");
   const [error, setError] = useState("");
@@ -166,30 +193,75 @@ export default function Dashboard() {
   const [chartMetric, setChartMetric] = useState("sci");
   const [periodMode, setPeriodMode] = useState("monthly");
   const [selectedDayIndex, setSelectedDayIndex] = useState(29);
-  const [selectedWeekIndex, setSelectedWeekIndex] = useState(
-    Math.max(0, weeklyPeriods.length - 1)
+  const [selectedWeekIndex, setSelectedWeekIndex] = useState(0);
+  const [uploadedDays, setUploadedDays] = useState([]);
+  const [functionalUnitType, setFunctionalUnitType] = useState("api_calls");
+  const hasCsvData = Boolean(dashboard?.has_csv);
+  const hasDemoData =
+    String(dashboard?.dashboard_id ?? id) === "1" && !hasCsvData;
+  const dashboardDays = uploadedDays.length
+    ? uploadedDays
+    : hasDemoData
+      ? DEMO_SERIES
+      : uploadedDays;
+  const weeklyPeriods = useMemo(
+    () => getWeeklyPeriods(dashboardDays, hasCsvData),
+    [dashboardDays, hasCsvData]
   );
-  const hasDemoData = String(dashboard?.dashboard_id ?? id) === "1";
-  const demoDays = hasDemoData ? DEMO_SERIES : [];
   const selectedWeek = weeklyPeriods[selectedWeekIndex];
   const periodDays =
-    periodMode === "weekly" ? selectedWeek?.days || [] : demoDays;
+    periodMode === "weekly" ? selectedWeek?.days || [] : dashboardDays;
   const selectedDay = periodDays[selectedDayIndex];
-  const periodAverage = (key) =>
-    periodDays.length > 0
-      ? periodDays.reduce((total, day) => total + day[key], 0) / periodDays.length
-      : 0;
-  const averageSci = periodAverage("sci");
-  const averageEmissions = periodAverage("emissions");
-  const averageIntensity = periodAverage("intensity");
-  const averageEnergy = periodAverage("energy");
+  const periodTotals = useMemo(() => {
+    const totalEmissions = periodDays.reduce(
+      (total, day) => total + day.emissions,
+      0
+    );
+    const totalEnergy = periodDays.reduce(
+      (total, day) => total + day.energy,
+      0
+    );
+    const totalFunctionalUnits = periodDays.reduce(
+      (total, day) => total + day.apiCalls,
+      0
+    );
+    const weightedIntensity = periodDays.reduce(
+      (total, day) => total + day.intensity * day.energy,
+      0
+    );
+    return {
+      emissions: totalEmissions,
+      energy: totalEnergy,
+      functionalUnits: totalFunctionalUnits,
+      intensity:
+        totalEnergy > 0
+          ? weightedIntensity / totalEnergy
+          : periodDays.length
+            ? periodDays.reduce((total, day) => total + day.intensity, 0) /
+              periodDays.length
+            : 0,
+      sci:
+        totalFunctionalUnits > 0
+          ? (totalEmissions * 1000) / totalFunctionalUnits
+          : 0,
+    };
+  }, [periodDays]);
+  const functionalUnit =
+    FUNCTIONAL_UNIT_TYPES.find((unit) => unit.value === functionalUnitType) ||
+    FUNCTIONAL_UNIT_TYPES[0];
   const periodLabel =
     periodMode === "weekly"
       ? `${selectedWeek?.label || "selected week"} (${formatDay(
           selectedWeek?.start || new Date()
         )}–${formatDay(selectedWeek?.end || new Date())})`
-      : "30-day month";
-  const activeMetric = metricOptions[chartMetric];
+      : `${dashboardDays.length || 30}-day month`;
+  const activeMetric = {
+    ...metricOptions[chartMetric],
+    unit:
+      chartMetric === "sci"
+        ? `gCO₂e / ${functionalUnit.singular}`
+        : metricOptions[chartMetric].unit,
+  };
 
   useEffect(() => {
     if (!sessionStorage.getItem(ACCESS_TOKEN_KEY)) {
@@ -199,6 +271,12 @@ export default function Dashboard() {
 
     let active = true;
     setLoading(true);
+    setDashboard(null);
+    setUploadedDays([]);
+    setNeedsUnlock(false);
+    setError("");
+    setPeriodMode("monthly");
+    setFunctionalUnitType("api_calls");
     getDashboard(id)
       .then((result) => {
         if (active) {
@@ -225,6 +303,66 @@ export default function Dashboard() {
       active = false;
     };
   }, [id, navigate]);
+
+  useEffect(() => {
+    if (!dashboard?.has_csv) {
+      setUploadedDays([]);
+      setMeasurementsLoading(false);
+      return undefined;
+    }
+
+    let active = true;
+    setMeasurementsLoading(true);
+    getDashboardMeasurements(id)
+      .then((result) => {
+        if (!Array.isArray(result.measurements)) {
+          throw new Error("The dashboard returned invalid measurement data.");
+        }
+        const measurements = result.measurements.map((item) => {
+          const date = parseLocalDate(item.date);
+          const day = {
+            date,
+            energy: Number(item.energy),
+            intensity: Number(item.intensity),
+            embodied: Number(item.embodied),
+            apiCalls: Number(item.functionalUnitCount ?? item.apiCalls),
+            sci: Number(item.sci),
+            emissions: Number(item.emissions),
+          };
+          if (
+            Number.isNaN(date.getTime()) ||
+            Object.values(day)
+              .filter((value) => typeof value === "number")
+              .some((value) => !Number.isFinite(value))
+          ) {
+            throw new Error("The dashboard returned invalid measurement data.");
+          }
+          return day;
+        });
+        if (active) setUploadedDays(measurements);
+      })
+      .catch((requestError) => {
+        if (!active) return;
+        if (!sessionStorage.getItem(ACCESS_TOKEN_KEY)) {
+          navigate("/", { replace: true });
+        } else {
+          setError(requestError.message);
+        }
+      })
+      .finally(() => {
+        if (active) setMeasurementsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [dashboard?.has_csv, id, navigate]);
+
+  useEffect(() => {
+    if (!dashboardDays.length) return;
+    setSelectedDayIndex(dashboardDays.length - 1);
+    setSelectedWeekIndex(Math.max(0, weeklyPeriods.length - 1));
+  }, [id, dashboardDays.length, weeklyPeriods.length]);
 
   async function unlock(event) {
     event.preventDefault();
@@ -364,42 +502,66 @@ export default function Dashboard() {
                 </button>
               </div>
             </div>
-            {hasDemoData ? (
+            {dashboardDays.length > 0 ? (
               <>
                 <div className="workspace-analytics-note">
                   <span className="workspace-demo-dot" />
-                  Demo data · 30-day sample · functional unit: API calls
+                  {hasDemoData
+                    ? "Demo data · 30-day sample"
+                    : `CSV data · ${dashboardDays.length} daily rows`}
+                  {" · "}functional unit: {functionalUnit.label}
                 </div>
                 <div className="workspace-detail-grid workspace-analytics-summary">
-              <article className="workspace-detail-card">
-                <span className="workspace-card-label">SCI</span>
-                <div className="workspace-summary-value">
-                  <strong className="workspace-detail-metric">{averageSci.toFixed(3)}</strong>
-                  <span className="workspace-summary-unit">gCO₂e / API call</span>
+                  <article className="workspace-detail-card">
+                    <span className="workspace-card-label">SCI</span>
+                    <div className="workspace-summary-value">
+                      <strong className="workspace-detail-metric">
+                        {periodTotals.sci.toFixed(3)}
+                      </strong>
+                      <span className="workspace-summary-unit">
+                        gCO₂e / {functionalUnit.singular}
+                      </span>
+                    </div>
+                  </article>
+                  <article className="workspace-detail-card">
+                    <span className="workspace-card-label">Emissions</span>
+                    <div className="workspace-summary-value">
+                      <strong className="workspace-detail-metric">
+                        {periodTotals.emissions.toFixed(1)}
+                      </strong>
+                      <span className="workspace-summary-unit">kgCO₂e total</span>
+                    </div>
+                  </article>
+                  <article className="workspace-detail-card">
+                    <span className="workspace-card-label">Grid intensity</span>
+                    <div className="workspace-summary-value">
+                      <strong className="workspace-detail-metric">
+                        {periodTotals.intensity.toFixed(1)}
+                      </strong>
+                      <span className="workspace-summary-unit">gCO₂e / kWh</span>
+                    </div>
+                  </article>
+                  <article className="workspace-detail-card">
+                    <span className="workspace-card-label">Energy consumption</span>
+                    <div className="workspace-summary-value">
+                      <strong className="workspace-detail-metric">
+                        {periodTotals.energy.toFixed(1)}
+                      </strong>
+                      <span className="workspace-summary-unit">kWh total</span>
+                    </div>
+                  </article>
+                  <article className="workspace-detail-card">
+                    <span className="workspace-card-label">Functional units</span>
+                    <div className="workspace-summary-value">
+                      <strong className="workspace-detail-metric">
+                        {formatFunctionalUnitCount(periodTotals.functionalUnits)}
+                      </strong>
+                      <span className="workspace-summary-unit">
+                        {functionalUnit.label} total
+                      </span>
+                    </div>
+                  </article>
                 </div>
-              </article>
-              <article className="workspace-detail-card">
-                <span className="workspace-card-label">Emissions</span>
-                <div className="workspace-summary-value">
-                  <strong className="workspace-detail-metric">{averageEmissions.toFixed(1)}</strong>
-                  <span className="workspace-summary-unit">kgCO₂e / day</span>
-                </div>
-              </article>
-              <article className="workspace-detail-card">
-                <span className="workspace-card-label">Grid intensity</span>
-                <div className="workspace-summary-value">
-                  <strong className="workspace-detail-metric">{averageIntensity.toFixed(1)}</strong>
-                  <span className="workspace-summary-unit">gCO₂e / kWh</span>
-                </div>
-              </article>
-              <article className="workspace-detail-card">
-                <span className="workspace-card-label">Energy consumption</span>
-                <div className="workspace-summary-value">
-                  <strong className="workspace-detail-metric">{averageEnergy.toFixed(1)}</strong>
-                  <span className="workspace-summary-unit">kWh / day</span>
-                </div>
-              </article>
-            </div>
             <section className="workspace-analytics-panel">
               <div className="workspace-analytics-heading">
                 <div>
@@ -411,8 +573,12 @@ export default function Dashboard() {
                       className={periodMode === "weekly" ? "is-active" : ""}
                       onClick={() => {
                         setPeriodMode("weekly");
-                        setSelectedWeekIndex(weeklyPeriods.length - 1);
-                        setSelectedDayIndex(6);
+                        const lastWeek = weeklyPeriods[weeklyPeriods.length - 1];
+                        const lastWeekIndex = weeklyPeriods.length - 1;
+                        setSelectedWeekIndex(lastWeekIndex);
+                        setSelectedDayIndex(
+                          Math.max(0, (lastWeek?.days.length || 1) - 1)
+                        );
                       }}
                     >
                       Weekly
@@ -424,7 +590,7 @@ export default function Dashboard() {
                       className={periodMode === "monthly" ? "is-active" : ""}
                       onClick={() => {
                         setPeriodMode("monthly");
-                        setSelectedDayIndex(demoDays.length - 1);
+                        setSelectedDayIndex(dashboardDays.length - 1);
                       }}
                     >
                       Monthly
@@ -437,8 +603,12 @@ export default function Dashboard() {
                         aria-label="Choose a week"
                         value={selectedWeekIndex}
                         onChange={(event) => {
-                          setSelectedWeekIndex(Number(event.target.value));
-                          setSelectedDayIndex(6);
+                          const weekIndex = Number(event.target.value);
+                          const week = weeklyPeriods[weekIndex];
+                          setSelectedWeekIndex(weekIndex);
+                          setSelectedDayIndex(
+                            Math.max(0, (week?.days.length || 1) - 1)
+                          );
                         }}
                       >
                         {weeklyPeriods.map((week, index) => (
@@ -447,6 +617,7 @@ export default function Dashboard() {
                           </option>
                         ))}
                       </select>
+                      <span className="workspace-chart-unit">{activeMetric.unit}</span>
                     </label>
                   ) : (
                     <>
@@ -456,19 +627,37 @@ export default function Dashboard() {
                     </>
                   )}
                 </div>
-                <div className="workspace-chart-tabs" role="tablist" aria-label="Chart metric">
-                  {Object.entries(metricOptions).map(([key, metric]) => (
-                    <button
-                      key={key}
-                      type="button"
-                      role="tab"
-                      aria-selected={chartMetric === key}
-                      className={chartMetric === key ? "is-active" : ""}
-                      onClick={() => setChartMetric(key)}
+                <div className="workspace-chart-control-group">
+                  <label className="workspace-functional-unit">
+                    <span>Functional unit</span>
+                    <select
+                      aria-label="Functional unit type"
+                      value={functionalUnitType}
+                      onChange={(event) =>
+                        setFunctionalUnitType(event.target.value)
+                      }
                     >
-                      {metric.label}
-                    </button>
-                  ))}
+                      {FUNCTIONAL_UNIT_TYPES.map((unit) => (
+                        <option key={unit.value} value={unit.value}>
+                          {unit.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <div className="workspace-chart-tabs" role="tablist" aria-label="Chart metric">
+                    {Object.entries(metricOptions).map(([key, metric]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        role="tab"
+                        aria-selected={chartMetric === key}
+                        className={chartMetric === key ? "is-active" : ""}
+                        onClick={() => setChartMetric(key)}
+                      >
+                        {metric.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
               <TimeSeriesChart
@@ -488,12 +677,15 @@ export default function Dashboard() {
                 </div>
                 <span className="workspace-selected-sci">
                   {selectedDay.sci.toFixed(6)}
-                  <small>gCO₂e / API call</small>
+                  <small>gCO₂e / {functionalUnit.singular}</small>
                 </span>
                 <span>{selectedDay.emissions.toFixed(1)} kgCO₂e</span>
                 <span>{selectedDay.intensity.toFixed(1)} gCO₂e/kWh</span>
                 <span>{selectedDay.energy.toFixed(1)} kWh</span>
-                <span>{selectedDay.apiCalls.toLocaleString()} API calls</span>
+                <span>
+                  {formatFunctionalUnitCount(selectedDay.apiCalls)}{" "}
+                  {functionalUnit.label}
+                </span>
               </div>
             </section>
 
@@ -502,28 +694,35 @@ export default function Dashboard() {
               periodLabel={periodLabel}
               selectedIndex={selectedDayIndex}
               onSelect={setSelectedDayIndex}
+              functionalUnitLabel={functionalUnit.singular}
+              functionalUnitPlural={functionalUnit.label}
             />
 
             <details className="workspace-daily-details">
-              <summary>View daily SCI for all 30 days</summary>
+              <summary>View daily SCI for all {dashboardDays.length} days</summary>
               <div className="workspace-daily-table-wrap">
                 <table className="workspace-daily-table">
                   <thead>
                     <tr>
                       <th>Date</th>
-                      <th>SCI (gCO₂e / API call)</th>
+                      <th>SCI (gCO₂e / {functionalUnit.singular})</th>
                       <th>Emissions (kgCO₂e)</th>
                       <th>Grid (gCO₂e/kWh)</th>
                       <th>Energy (kWh)</th>
-                      <th>API calls</th>
+                      <th>{functionalUnit.label}</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {demoDays.map((day, index) => (
+                    {dashboardDays.map((day, index) => (
                       <tr
                         key={day.date.toISOString()}
                         className={
-                          periodMode === "monthly" && index === selectedDayIndex
+                          (periodMode === "monthly" &&
+                            index === selectedDayIndex) ||
+                          (periodMode === "weekly" &&
+                            index ===
+                              (selectedWeek?.startIndex ?? 0) +
+                                selectedDayIndex)
                             ? "is-selected"
                             : ""
                         }
@@ -541,7 +740,7 @@ export default function Dashboard() {
                         <td>{day.emissions.toFixed(1)}</td>
                         <td>{day.intensity.toFixed(1)}</td>
                         <td>{day.energy.toFixed(1)}</td>
-                        <td>{day.apiCalls.toLocaleString()}</td>
+                        <td>{formatFunctionalUnitCount(day.apiCalls)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -549,14 +748,33 @@ export default function Dashboard() {
               </div>
             </details>
               </>
+            ) : measurementsLoading ? (
+              <section
+                className="workspace-detail-empty"
+                role="status"
+                aria-busy="true"
+              >
+                <span className="workspace-spinner" aria-hidden="true" />
+                <h2>Loading CSV measurements</h2>
+                <p>Retrieving the processed daily data for this dashboard.</p>
+              </section>
             ) : (
               <section className="workspace-detail-empty">
                 <span className="workspace-detail-chart-icon" aria-hidden="true">⌁</span>
                 <h2>No telemetry data yet</h2>
                 <p>
-                  This workspace has no analytics data. The current demo data is
-                  linked only to dashboard 1 (fe).
+                  Upload a valid 30- or 31-day CSV to populate this dashboard’s
+                  daily, weekly, and monthly analytics.
                 </p>
+                <button
+                  type="button"
+                  className="workspace-secondary-button"
+                  onClick={() =>
+                    navigate(`/home?settings=${encodeURIComponent(id)}`)
+                  }
+                >
+                  Upload CSV
+                </button>
               </section>
             )}
           </section>

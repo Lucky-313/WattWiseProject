@@ -1,5 +1,4 @@
-import csv
-import io
+import asyncio
 import json
 from datetime import date, datetime, timezone
 from pathlib import PurePath
@@ -10,9 +9,10 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from ExternalGridAdapter import ExternalGridAdapter
+from ExternalGridAdapter import ExternalGridAdapter, GridIntensityFetchError
 from DiagnosticLog import DiagnosticLog
 from LogBook import Logbook as DashboardLogbook
+from Services.csv_import_service import CSVImportError, PreparedDailyMetric, prepare_daily_metrics
 from Security import (
     create_dashboard_access_token,
     hash_password,
@@ -428,35 +428,60 @@ def validate_csv(filename: str, content: str) -> tuple[str, str]:
     if len(content.encode("utf-8")) > MAX_CSV_BYTES:
         raise HTTPException(status_code=413, detail="CSV files must be 5 MB or smaller")
 
-    try:
-        rows = csv.reader(io.StringIO(content))
-        header = next(rows, None)
-        first_record = next(rows, None)
-    except csv.Error as exc:
-        raise HTTPException(status_code=422, detail="The CSV file is not valid") from exc
-
-    if not header or not any(cell.strip() for cell in header):
-        raise HTTPException(status_code=422, detail="The CSV needs a header row")
-    if first_record is None:
-        raise HTTPException(
-            status_code=422, detail="The CSV needs at least one data row"
-        )
     return safe_filename[:255], content
 
 
-def save_csv(
-    session: Session, dashboard: Dashboard, filename: str, content: str
-) -> DashboardImport:
+def prepare_csv_upload(
+    filename: str, content: str
+) -> tuple[str, str, list[PreparedDailyMetric]]:
     safe_filename, csv_content = validate_csv(filename, content)
+    try:
+        measurements = prepare_daily_metrics(
+            csv_content, ExternalGridAdapter()
+        )
+    except CSVImportError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except GridIntensityFetchError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    return safe_filename, csv_content, measurements
+
+
+def save_csv(
+    session: Session,
+    dashboard: Dashboard,
+    prepared: tuple[str, str, list[PreparedDailyMetric]],
+) -> DashboardImport:
+    safe_filename, csv_content, measurements = prepared
     session.query(DashboardImport).filter(
         DashboardImport.dashboard_id == dashboard.dashboard_id
-    ).delete()
+    ).delete(synchronize_session=False)
+    session.query(DashboardDailyMetric).filter(
+        DashboardDailyMetric.dashboard_id == dashboard.dashboard_id
+    ).delete(synchronize_session=False)
     imported_file = DashboardImport(
         dashboard_id=dashboard.dashboard_id,
         filename=safe_filename,
         content=csv_content,
     )
     dashboard.input_method = "csv"
+    total_emissions = sum(item.emissions_gco2e for item in measurements)
+    total_functional_units = sum(
+        item.functional_unit_count for item in measurements
+    )
+    dashboard.sci_summary = total_emissions / total_functional_units
+    session.add_all(
+        DashboardDailyMetric(
+            dashboard_id=dashboard.dashboard_id,
+            measured_on=item.measured_on,
+            energy_kwh=item.energy_kwh,
+            carbon_intensity_gco2_kwh=item.carbon_intensity_gco2_kwh,
+            embodied_emissions_gco2e=0.0,
+            api_calls=item.functional_unit_count,
+            sci_score=item.sci_score,
+            emissions_gco2e=item.emissions_gco2e,
+        )
+        for item in measurements
+    )
     session.add(imported_file)
     return imported_file
 
@@ -534,8 +559,19 @@ def create_dashboard(
             status_code=422,
             detail="Enter a passcode or turn off passcode protection",
         )
+    if request.input_method == "csv" and not request.csv_content:
+        raise HTTPException(
+            status_code=422,
+            detail="Choose a CSV file before creating this dashboard",
+        )
     if request.csv_content is not None and not request.csv_filename:
         raise HTTPException(status_code=422, detail="CSV filename is required")
+
+    prepared_csv = (
+        prepare_csv_upload(request.csv_filename, request.csv_content)
+        if request.csv_content is not None and request.csv_filename
+        else None
+    )
 
     with DatabaseSession(engine) as session:
         count = (
@@ -562,9 +598,9 @@ def create_dashboard(
         session.add(dashboard)
         session.flush()
         imported_file = None
-        if request.csv_content is not None and request.csv_filename:
+        if prepared_csv:
             imported_file = save_csv(
-                session, dashboard, request.csv_filename, request.csv_content
+                session, dashboard, prepared_csv
             )
         session.commit()
         session.refresh(dashboard)
@@ -750,6 +786,7 @@ def read_dashboard_measurements(
                     "intensity": item.carbon_intensity_gco2_kwh,
                     "embodied": item.embodied_emissions_gco2e,
                     "apiCalls": item.api_calls,
+                    "functionalUnitCount": item.api_calls,
                     "sci": item.sci_score,
                     "emissions": item.emissions_gco2e / 1000,
                 }
@@ -985,7 +1022,12 @@ async def upload_dashboard_csv(
     with DatabaseSession(engine) as session:
         dashboard = get_owned_dashboard(session, dashboard_id, owner_id)
         require_dashboard_access(dashboard, owner_id, dashboard_access)
-        imported_file = save_csv(session, dashboard, filename, content)
+
+    prepared_csv = await asyncio.to_thread(prepare_csv_upload, filename, content)
+    with DatabaseSession(engine) as session:
+        dashboard = get_owned_dashboard(session, dashboard_id, owner_id)
+        require_dashboard_access(dashboard, owner_id, dashboard_access)
+        imported_file = save_csv(session, dashboard, prepared_csv)
         session.commit()
         session.refresh(dashboard)
         session.refresh(imported_file)

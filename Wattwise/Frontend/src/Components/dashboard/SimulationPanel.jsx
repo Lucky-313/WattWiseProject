@@ -1,5 +1,4 @@
-import { useMemo, useState } from "react";
-import { DEMO_SERIES } from "../../services/demoTelemetry.js";
+import { useEffect, useMemo, useState } from "react";
 
 const variableFields = [
   {
@@ -7,14 +6,14 @@ const variableFields = [
     label: "Energy consumption",
     unit: "kWh / day",
     step: "0.1",
-    min: "0.01",
+    min: "0",
   },
   {
     key: "intensity",
     label: "Grid carbon intensity",
     unit: "gCO₂e / kWh",
     step: "1",
-    min: "0.01",
+    min: "0",
   },
   {
     key: "embodied",
@@ -28,7 +27,7 @@ const variableFields = [
     label: "API calls",
     unit: "calls / day",
     step: "100",
-    min: "1",
+    min: "0.1",
   },
 ];
 
@@ -38,7 +37,10 @@ function average(days, key) {
 
 function makeDefaultInputs(days) {
   return Object.fromEntries(
-    variableFields.map(({ key }) => [key, average(days, key).toFixed(1)])
+    variableFields.map(({ key, min }) => {
+      const roundedValue = Number(average(days, key).toFixed(1));
+      return [key, Math.max(roundedValue, Number(min)).toFixed(1)];
+    })
   );
 }
 
@@ -62,16 +64,18 @@ function formatInputOnBlur(key, inputs, setInputs) {
   setInputs((previous) => ({ ...previous, [key]: roundedValue.toFixed(1) }));
 }
 
-function buildScenario(days, inputs, baseline) {
-  const scale = Object.fromEntries(
-    variableFields.map(({ key }) => [key, inputs[key] / baseline[key]])
-  );
-
+function buildScenario(days, inputs, baseline, defaultInputs) {
   return days.map((day) => {
-    const energy = day.energy * scale.energy;
-    const intensity = day.intensity * scale.intensity;
-    const embodied = day.embodied * scale.embodied;
-    const apiCalls = day.apiCalls * scale.apiCalls;
+    const adjust = (key) => {
+      if (inputs[key] === Number(defaultInputs[key])) return day[key];
+      return baseline[key] > 0
+        ? day[key] * (inputs[key] / baseline[key])
+        : inputs[key];
+    };
+    const energy = adjust("energy");
+    const intensity = adjust("intensity");
+    const embodied = adjust("embodied");
+    const apiCalls = adjust("apiCalls");
     return {
       ...day,
       energy,
@@ -83,7 +87,13 @@ function buildScenario(days, inputs, baseline) {
   });
 }
 
-function SimulationChart({ days, scenarioDays, selectedIndex, onSelect }) {
+function SimulationChart({
+  days,
+  scenarioDays,
+  selectedIndex,
+  onSelect,
+  functionalUnitLabel,
+}) {
   const width = 800;
   const height = 300;
   const plot = { left: 62, right: 20, top: 24, bottom: 42 };
@@ -123,7 +133,7 @@ function SimulationChart({ days, scenarioDays, selectedIndex, onSelect }) {
       <svg
         viewBox={`0 0 ${width} ${height}`}
         role="img"
-        aria-label={`Interactive ${days.length}-day SCI simulation chart. The blue line is your scenario and the gray line is the original.`}
+        aria-label={`Interactive ${days.length}-day SCI per ${functionalUnitLabel} simulation chart. The blue line is your scenario and the gray line is the original.`}
       >
         {ticks.map((fraction) => {
           const value = upper - fraction * range;
@@ -187,7 +197,7 @@ function SimulationChart({ days, scenarioDays, selectedIndex, onSelect }) {
               month: "long",
               day: "numeric",
               year: "numeric",
-            })}: simulated SCI ${day.sci.toFixed(3)} grams of carbon dioxide equivalent per API call`}
+            })}: simulated SCI ${day.sci.toFixed(3)} grams of carbon dioxide equivalent per ${functionalUnitLabel}`}
             onClick={() => onSelect(index)}
             onFocus={() => onSelect(index)}
             onMouseEnter={() => onSelect(index)}
@@ -220,36 +230,55 @@ function SimulationChart({ days, scenarioDays, selectedIndex, onSelect }) {
   );
 }
 
-export default function SimulationPanel({ days, periodLabel, selectedIndex, onSelect }) {
-  const [inputs, setInputs] = useState(() => makeDefaultInputs(DEMO_SERIES));
+export default function SimulationPanel({
+  days,
+  periodLabel,
+  selectedIndex,
+  onSelect,
+  functionalUnitLabel,
+  functionalUnitPlural,
+}) {
+  const defaultInputs = useMemo(() => makeDefaultInputs(days), [days]);
+  const [inputs, setInputs] = useState(defaultInputs);
   const baseline = useMemo(
-    () => {
-      const defaults = makeDefaultInputs(DEMO_SERIES);
-      return Object.fromEntries(
-        variableFields.map(({ key }) => [key, Number(defaults[key])])
-      );
-    },
-    []
+    () =>
+      Object.fromEntries(
+        variableFields.map(({ key }) => [key, average(days, key)])
+      ),
+    [days]
   );
   const parsedInputs = Object.fromEntries(
     variableFields.map(({ key }) => [key, Number(inputs[key])])
   );
-  const validInputs = variableFields.every(({ key }) => {
+  const validInputs = variableFields.every(({ key, min }) => {
+    if (inputs[key].trim() === "") return false;
     const value = parsedInputs[key];
-    return Number.isFinite(value) && value >= (key === "embodied" ? 0 : Number.EPSILON);
+    return (
+      Number.isFinite(value) &&
+      value >= Number(min)
+    );
   });
+  const isBaseline = variableFields.every(
+    ({ key }) => parsedInputs[key] === Number(defaultInputs[key])
+  );
   const scenarioDays = validInputs
-    ? buildScenario(days, parsedInputs, baseline)
+    ? isBaseline
+      ? days
+      : buildScenario(days, parsedInputs, baseline, defaultInputs)
     : [];
   const averageSci = validInputs ? average(scenarioDays, "sci") : null;
   const selectedDay = scenarioDays[selectedIndex];
+
+  useEffect(() => {
+    setInputs(defaultInputs);
+  }, [defaultInputs]);
 
   function updateInput(key, value) {
     setInputs((previous) => ({ ...previous, [key]: value }));
   }
 
   function resetSimulation() {
-    setInputs(makeDefaultInputs(DEMO_SERIES));
+    setInputs(defaultInputs);
   }
 
   return (
@@ -281,7 +310,9 @@ export default function SimulationPanel({ days, periodLabel, selectedIndex, onSe
               {periodLabel.toUpperCase()} SCENARIO
             </span>
             <h2>SCI over time</h2>
-            <p>Daily SCI per API call, recalculated from your scenario values.</p>
+            <p>
+              Daily SCI per {functionalUnitLabel}, recalculated from your scenario values.
+            </p>
           </div>
         </div>
         {validInputs && (
@@ -290,6 +321,7 @@ export default function SimulationPanel({ days, periodLabel, selectedIndex, onSe
             scenarioDays={scenarioDays}
             selectedIndex={selectedIndex}
             onSelect={onSelect}
+            functionalUnitLabel={functionalUnitLabel}
           />
         )}
       </section>
@@ -298,12 +330,16 @@ export default function SimulationPanel({ days, periodLabel, selectedIndex, onSe
         <article className="workspace-simulation-score">
           <span className="workspace-card-label">SIMULATED AVERAGE SCI</span>
           <strong>{averageSci == null ? "—" : averageSci.toFixed(3)}</strong>
-          <span>gCO₂e per API call</span>
-          <small>SCI = ((energy × grid intensity) + embodied emissions) ÷ API calls</small>
+          <span>gCO₂e per {functionalUnitLabel}</span>
+          <small>
+            SCI = ((energy × grid intensity) + embodied emissions) ÷ {functionalUnitPlural}
+          </small>
         </article>
         {variableFields.map((field) => (
           <label key={field.key} className="workspace-simulation-field">
-            <span>{field.label}</span>
+            <span>
+              {field.key === "apiCalls" ? functionalUnitPlural : field.label}
+            </span>
             <input
               type="number"
               min={field.min}
@@ -312,17 +348,24 @@ export default function SimulationPanel({ days, periodLabel, selectedIndex, onSe
               value={inputs[field.key]}
               onChange={(event) => updateInput(field.key, event.target.value)}
               onBlur={() => formatInputOnBlur(field.key, inputs, setInputs)}
-              aria-label={`${field.label}, ${field.unit}`}
+              aria-label={`${field.key === "apiCalls" ? functionalUnitPlural : field.label}, ${
+                field.key === "apiCalls"
+                  ? `${functionalUnitPlural} / day`
+                  : field.unit
+              }`}
             />
-            <small>{field.unit}</small>
+            <small>
+              {field.key === "apiCalls"
+                ? `${functionalUnitPlural} / day`
+                : field.unit}
+            </small>
           </label>
         ))}
       </section>
 
       {!validInputs && (
         <p className="workspace-simulation-validation" role="alert">
-          Enter a valid non-negative value for each variable. Energy, intensity,
-          and API calls must be greater than zero.
+          Enter non-negative values; the daily functional-unit count must be at least 0.1.
         </p>
       )}
 

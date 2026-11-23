@@ -2514,7 +2514,7 @@ button {
 }
 
 .workspace-detail-grid.workspace-analytics-summary {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   margin-bottom: 14px;
 }
 
@@ -2638,6 +2638,38 @@ button {
 }
 
 .workspace-week-picker select:focus-visible {
+  outline: 2px solid #7dd3fc;
+  outline-offset: 1px;
+}
+
+.workspace-chart-control-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.workspace-functional-unit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #64748b;
+  font-size: 10px;
+}
+
+.workspace-functional-unit select {
+  min-width: 135px;
+  min-height: 32px;
+  padding: 0 10px;
+  color: #334155;
+  background: #fff;
+  border: 1px solid #dbe5ee;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.workspace-functional-unit select:focus-visible {
   outline: 2px solid #7dd3fc;
   outline-offset: 1px;
 }
@@ -4232,6 +4264,20 @@ button {
     padding: 0 7px;
   }
 
+  .workspace-chart-control-group {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .workspace-functional-unit {
+    justify-content: space-between;
+  }
+
+  .workspace-functional-unit select {
+    flex: 1;
+    max-width: 220px;
+  }
+
   .workspace-selected-day {
     gap: 12px;
     padding: 12px;
@@ -4669,5 +4715,15 @@ html[data-theme="dark"] .workspace-summary-unit {
 
 html[data-theme="dark"] .workspace-simulation-comparison-value > span {
   color: #9aabc0;
+}
+
+html[data-theme="dark"] .workspace-functional-unit {
+  color: #9aabc0;
+}
+
+html[data-theme="dark"] .workspace-functional-unit select {
+  color: #e2e8f0;
+  background: #0f1927;
+  border-color: #34465c;
 }
 
