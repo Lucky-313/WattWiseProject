@@ -175,7 +175,14 @@ function ReportModal({ report, onClose }) {
     try {
       const doc = createReportPdf(report, PDFConstructor);
       const filename = `${pdfText(report.report_name).replace(/[^a-z0-9-_ ]/gi, "").trim() || "wattwise-report"}.pdf`;
+      const pdfTab = window.open(doc.output("bloburl"), "_blank");
+      if (pdfTab) {
+        pdfTab.opener = null;
+      }
       doc.save(filename);
+      if (!pdfTab) {
+        setPdfError("The PDF downloaded, but pop-ups are blocked. Allow pop-ups to open it in a new tab.");
+      }
     } catch (error) {
       console.error("Could not generate the report PDF.", error);
       setPdfError("The PDF could not be generated. Please try again.");
@@ -293,10 +300,49 @@ export default function Reports() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [selectedReport, setSelectedReport] = useState(null);
+  const [reportsCleared, setReportsCleared] = useState(false);
   const activeRules = logbook?.rules || [];
   const availableMetrics = metricOptions.filter(
     (metric) => !activeRules.some((rule) => rule.target_metric === metric.key)
   );
+  const filteredReports = activeRules.length === 0
+  ? []
+  : (logbook?.reports || []).flatMap((report) => {
+      const breaches = report.details?.breaches || [report.details || {}];
+
+      // Only keep breaches that exceed the limit
+      const matchingBreaches = breaches.filter((breach) => {
+        const metric = breach.target_metric || breach.metric_key;
+
+        const rule = activeRules.find(
+          (activeRule) => activeRule.target_metric === metric
+        );
+
+        return rule &&
+          Number(breach.observed_value) >
+          Number(rule.max_threshold_limit);
+      });
+
+      // Every active limit must have been breached
+      const matchesAllRules = activeRules.every((rule) =>
+        matchingBreaches.some(
+          (breach) =>
+            rule.target_metric === (breach.target_metric || breach.metric_key)
+        )
+      );
+
+      if (!matchesAllRules) return [];
+
+      return [{
+        ...report,
+        details: {
+          ...report.details,
+          breaches: matchingBreaches,
+        },
+      }];
+    });
+
+  const visibleReports = reportsCleared ? [] : filteredReports;
 
   useEffect(() => {
     if (!sessionStorage.getItem(ACCESS_TOKEN_KEY)) {
@@ -361,7 +407,9 @@ export default function Reports() {
   }, [logbook]);
 
   async function refreshLogbook() {
-    setLogbook(await getDashboardLogbook(id));
+    const updatedLogbook = await getDashboardLogbook(id);
+    setLogbook(updatedLogbook);
+    setReportsCleared(false);
   }
 
   async function saveLimit(event, targetMetric, value) {
@@ -657,13 +705,26 @@ export default function Reports() {
                     <h2>Breach reports</h2>
                     <p>Reports are retained as a timeline and do not replace older incidents.</p>
                   </div>
-                  <span className="workspace-report-rule-count">
-                    {logbook.reports.length} REPORTS
-                  </span>
+                  <div className="workspace-report-heading-actions">
+                    <span className="workspace-report-rule-count">
+                      {visibleReports.length} REPORTS
+                    </span>
+                    <button
+                      type="button"
+                      className="workspace-active-limit-remove"
+                      onClick={() => {
+                        setReportsCleared(true);
+                        setSelectedReport(null);
+                      }}
+                      disabled={visibleReports.length === 0}
+                    >
+                      Clear report view
+                    </button>
+                  </div>
                 </div>
-                {logbook.reports.length ? (
+                {visibleReports.length ? (
                   <div className="workspace-breach-list">
-                    {logbook.reports.map((report) => (
+                    {visibleReports.map((report) => (
                       <button
                         type="button"
                         key={report.report_id}
@@ -693,11 +754,15 @@ export default function Reports() {
                   <div className="workspace-report-empty">
                     <span aria-hidden="true">✓</span>
                     <div>
-                      <strong>No breach reports yet</strong>
+                      <strong>
+                        {reportsCleared ? "Report view cleared" : "No matching breach reports"}
+                      </strong>
                       <p>
-                        {logbook.measurement_days
-                          ? "Current readings are within their configured limits, or no limits have been set."
-                          : "Reports will appear here when data exceeds a configured limit."}
+                        {reportsCleared
+                          ? "Historical reports are still saved and will reappear when you reopen this page."
+                          : activeRules.length === 0
+                            ? "Set at least one monitoring limit to see matching breach reports."
+                            : "No days have breached every currently active monitoring limit."}
                       </p>
                     </div>
                   </div>
